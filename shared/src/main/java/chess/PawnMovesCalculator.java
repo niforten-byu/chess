@@ -23,7 +23,7 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
 
         // setup depending on color of pawn
         int direction, startRow, promotionRow;
-        if (currColor == ChessGame.TeamColor.BLACK) {
+        if (currColor == ChessGame.TeamColor.BLACK) { // black
             direction = -1;
             startRow = 7;
             promotionRow = 1;
