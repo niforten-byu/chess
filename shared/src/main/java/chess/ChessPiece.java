@@ -2,6 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 // here is a new comment
 /**
  * Represents a single chess piece
@@ -53,10 +54,46 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        if(piece.getPieceType() == PieceType.BISHOP) {
-            return List.of(new ChessMove(new ChessPosition(5,4), new ChessPosition(1,8), null));
+        PieceMovesCalculator calculator;
+
+        switch (this.getPieceType()) {
+            case BISHOP:
+                calculator = new BishopMovesCalculator();
+                break;
+            /* case ROOK:
+                calculator = new RookMovesCalculator();
+                break;
+            case QUEEN:
+                calculator = new QueenMovesCalculator();
+                break;
+            case KNIGHT:
+                calculator = new KnightMovesCalculator();
+                break;
+            case KING:
+                calculator = new KingMovesCalculator();
+                break;
+            case PAWN:
+                calculator = new PawnMovesCalculator();
+                break; */
+            default:
+                throw new RuntimeException("Not a valid Piece Type");
         }
-        return List.of();
+
+        // Delegate the calculation to the specific class
+        return calculator.pieceMoves(board, myPosition);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessPiece that = (ChessPiece) o;
+        return pieceColor == that.pieceColor && type == that.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceColor, type);
     }
 }
