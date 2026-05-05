@@ -41,14 +41,14 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         ChessPosition newPosOneForward = new ChessPosition(currRow + direction, currCol);
         ChessPiece potentialPieceOneForward = board.getPiece(newPosOneForward);
         if (potentialPieceOneForward == null) { // there is not a piece in front
-            ChessMove newMoveOneForward = new ChessMove(position, newPosOneForward, );
-            moves.add(newMoveOneForward);
+            pawnMove(moves, position, newPosOneForward, promotionRow);
+
             if (currRow == startRow) { // pawn in starting position, can potentially double move
                 ChessPosition newPosTwoForward = new ChessPosition(currRow + direction * 2, currCol);
                 ChessPiece potentialPieceTwoForward = board.getPiece(newPosTwoForward);
+
                 if (potentialPieceTwoForward == null) { // there is not
-                    ChessMove newMoveTwoForward = new ChessMove(position, newPosTwoForward, );
-                    moves.add(newMoveTwoForward);
+                    pawnMove(moves, position, newPosTwoForward, promotionRow);
                 }
             }
         }
@@ -60,8 +60,7 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
             if (potentialPieceLeft != null) {
                 ChessGame.TeamColor potentialPieceColorLeft = potentialPieceLeft.getTeamColor();
                 if (potentialPieceColorLeft != currColor) { // the two pieces are the enemy colors
-                    ChessMove newMoveLeft = new ChessMove(position, newPosLeft, );
-                    moves.add(newMoveLeft);
+                    pawnMove(moves, position, newPosLeft, promotionRow);
                 }
             }
         }
@@ -71,13 +70,23 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
             if (potentialPieceRight != null) {
                 ChessGame.TeamColor potentialPieceColorRight = potentialPieceRight.getTeamColor();
                 if (potentialPieceColorRight != currColor) { // the two pieces are the enemy colors
-                    ChessMove newMoveRight = new ChessMove(position, newPosRight, );
-                    moves.add(newMoveRight);
+                    pawnMove(moves, position, newPosRight, promotionRow);
                 }
             }
         }
 
         return moves;
+    }
+
+    private void pawnMove(Collection<ChessMove> moves, ChessPosition startPos, ChessPosition endPos, int promotionRow) {
+        if (endPos.getRow() == promotionRow) { // in promotion row
+            moves.add(new ChessMove(startPos, endPos, ChessPiece.PieceType.BISHOP));
+            moves.add(new ChessMove(startPos, endPos, ChessPiece.PieceType.KNIGHT));
+            moves.add(new ChessMove(startPos, endPos, ChessPiece.PieceType.ROOK));
+            moves.add(new ChessMove(startPos, endPos, ChessPiece.PieceType.QUEEN));
+        } else { // not in promotion row
+            moves.add(new ChessMove(startPos, endPos, null));
+        }
     }
 
 }

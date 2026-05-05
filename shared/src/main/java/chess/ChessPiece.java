@@ -72,9 +72,9 @@ public class ChessPiece {
             case KING:
                 calculator = new KingMovesCalculator();
                 break;
-            /* case PAWN:
+            case PAWN:
                 calculator = new PawnMovesCalculator();
-                break; */
+                break;
             default:
                 throw new RuntimeException("Not a valid Piece Type");
         }
