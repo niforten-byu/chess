@@ -27,7 +27,7 @@ public class KnightMovesCalculator implements PieceMovesCalculator {
             int rowOffset = dir[0];
             int colOffset = dir[1];
 
-            int currRow = position.getRow() + rowOffset;;
+            int currRow = position.getRow() + rowOffset;
             int currCol = position.getColumn() + colOffset;
 
             if (currRow < 1 || currRow > 8 || currCol < 1 || currCol > 8) {
