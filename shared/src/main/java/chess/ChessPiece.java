@@ -60,10 +60,10 @@ public class ChessPiece {
             case BISHOP:
                 calculator = new BishopMovesCalculator();
                 break;
-            /* case ROOK:
+            case ROOK:
                 calculator = new RookMovesCalculator();
                 break;
-            case QUEEN:
+            /* case QUEEN:
                 calculator = new QueenMovesCalculator();
                 break;
             case KNIGHT:
