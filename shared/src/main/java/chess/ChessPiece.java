@@ -66,10 +66,10 @@ public class ChessPiece {
             case QUEEN:
                 calculator = new QueenMovesCalculator();
                 break;
-            /* case KNIGHT:
+            case KNIGHT:
                 calculator = new KnightMovesCalculator();
                 break;
-            case KING:
+            /* case KING:
                 calculator = new KingMovesCalculator();
                 break;
             case PAWN:
