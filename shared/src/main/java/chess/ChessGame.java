@@ -202,6 +202,22 @@ public class ChessGame {
         throw new RuntimeException("Not implemented");
     }
 
+    private boolean hasValidMoves(TeamColor teamColor){
+        for(int row = 1; row <= 8; row++) {
+            for(int column = 1; column <= 8; column++) {
+                ChessPosition currentPosition = new ChessPosition(row, column);
+                ChessPiece potentialPiece = gameBoard.getPiece(currentPosition);
+                if(potentialPiece != null && potentialPiece.getTeamColor() == teamColor) {
+                    Collection<ChessMove> moves = validMoves(currentPosition);
+                    if(moves != null && !moves.isEmpty()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Sets this game's chessboard to a given board
      *
