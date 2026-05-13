@@ -3,7 +3,7 @@ package chess;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-// here is a new comment
+
 /**
  * Represents a single chess piece
  * <p>
