@@ -72,14 +72,32 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        //iterate through board finding king of color passed in. store its position
-        //loop through board, for each enemy piece get its moves (call pieceMoves())
-        //loop through the moves of each enemy piece, if any of them have the same position as the kings position return true
-        //else return false
-        //tips:
-        // create a helper method to get king position
-        throw new RuntimeException("not implemented yet ");
 
+        ChessPosition kingPosition = getKingPosition(gameBoard, teamColor);
+
+        TeamColor opponentColor;
+
+        if (teamColor == TeamColor.WHITE) {
+            opponentColor = TeamColor.BLACK;
+        } else {
+            opponentColor = TeamColor.WHITE;
+        }
+
+        for(int row = 1; row <= 8; row++) {
+            for(int column = 1; column <= 8; column++) {
+                ChessPiece potentialEnemy = gameBoard.getPiece(new ChessPosition(row, column));
+                if(potentialEnemy != null && potentialEnemy.getTeamColor() == opponentColor){
+                    Collection<ChessMove> moves = potentialEnemy.pieceMoves(gameBoard, new ChessPosition(row, column));
+                    for(ChessMove move : moves) {
+                        if (move.getEndPosition().equals(kingPosition)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+        }
+        return false;
     }
 
     public ChessPosition getKingPosition(ChessBoard currentBoard, TeamColor kingColor) {
