@@ -71,9 +71,15 @@ public class ChessGame {
      * @param teamColor which team to check for check
      * @return True if the specified team is in check
      */
-    public boolean isInCheck(TeamColor teamColor) {
 
-        ChessPosition kingPosition = getKingPosition(gameBoard, teamColor);
+    public boolean isInCheck(TeamColor teamColor) {
+        return isInCheck(teamColor, this.gameBoard);
+    }
+
+    // for simulations
+    private boolean isInCheck(TeamColor teamColor, ChessBoard board) {
+
+        ChessPosition kingPosition = getKingPosition(board, teamColor);
 
         TeamColor opponentColor;
 
@@ -85,9 +91,9 @@ public class ChessGame {
 
         for(int row = 1; row <= 8; row++) {
             for(int column = 1; column <= 8; column++) {
-                ChessPiece potentialEnemy = gameBoard.getPiece(new ChessPosition(row, column));
+                ChessPiece potentialEnemy = board.getPiece(new ChessPosition(row, column));
                 if(potentialEnemy != null && potentialEnemy.getTeamColor() == opponentColor){
-                    Collection<ChessMove> moves = potentialEnemy.pieceMoves(gameBoard, new ChessPosition(row, column));
+                    Collection<ChessMove> moves = potentialEnemy.pieceMoves(board, new ChessPosition(row, column));
                     for(ChessMove move : moves) {
                         if (move.getEndPosition().equals(kingPosition)) {
                             return true;
@@ -117,6 +123,21 @@ public class ChessGame {
             }
         }
         throw new RuntimeException("King not found on the board for the following color: " + kingColor);
+    }
+
+    public boolean isMoveSafe(ChessMove move) {
+        ChessBoard testingBoard = gameBoard.clone();
+        ChessPiece desiredPiece = testingBoard.getPiece(move.getStartPosition());
+        testingBoard.removePiece(move.getStartPosition());
+        if(move.getPromotionPiece() == null) {
+            testingBoard.addPiece(move.getEndPosition(), desiredPiece);
+            return !isInCheck(desiredPiece.getTeamColor(), testingBoard);
+        }
+        else {
+            ChessPiece promotedPiece = new ChessPiece(desiredPiece.getTeamColor(), move.getPromotionPiece());
+            testingBoard.addPiece(move.getEndPosition(), promotedPiece);
+            return !isInCheck(promotedPiece.getTeamColor(), testingBoard);
+        }
     }
 
     /**
