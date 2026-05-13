@@ -72,7 +72,33 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        //iterate through board finding king of color passed in. store its position
+        //loop through board, for each enemy piece get its moves (call pieceMoves())
+        //loop through the moves of each enemy piece, if any of them have the same position as the kings position return true
+        //else return false
+        //tips:
+        // create a helper method to get king position
+        throw new RuntimeException("not implemented yet ");
+
+    }
+
+    public ChessPosition getKingPosition(ChessBoard currentBoard, TeamColor kingColor) {
+        for(int row = 1; row <= 8; row++) {
+            for(int column = 1; column <= 8; column++) {
+                ChessPiece potentialKing = currentBoard.getPiece(new ChessPosition(row, column));
+                if(potentialKing != null) {
+                    ChessPiece.PieceType potentialType = potentialKing.getPieceType();
+                    if (potentialType == ChessPiece.PieceType.KING) {
+                        TeamColor potentialColor = potentialKing.getTeamColor();
+                        if (potentialColor == kingColor) {
+                            return new ChessPosition(row, column);
+                        }
+                    }
+                }
+
+            }
+        }
+        throw new RuntimeException("King not found on the board for the following color: " + kingColor);
     }
 
     /**
