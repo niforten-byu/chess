@@ -74,7 +74,35 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        Collection<ChessMove> possibleMoves = validMoves(move.getStartPosition());
+        if(possibleMoves != null && possibleMoves.contains(move)) {
+            ChessPiece currentPiece = gameBoard.getPiece(move.getStartPosition());
+            if (currentPiece.getTeamColor().equals(currentTurnColor)){
+                if(move.getPromotionPiece() == null) {
+                    gameBoard.addPiece(move.getEndPosition(), currentPiece);
+                    gameBoard.removePiece(move.getStartPosition());
+                }
+                else {
+                    ChessPiece promotedPiece = new ChessPiece(currentPiece.getTeamColor(), move.getPromotionPiece());
+                    gameBoard.addPiece(move.getEndPosition(), promotedPiece);
+                    gameBoard.removePiece(move.getStartPosition());
+                }
+
+                if(currentTurnColor == TeamColor.WHITE) {
+                    currentTurnColor = TeamColor.BLACK;
+                }
+                else {
+                    currentTurnColor = TeamColor.WHITE;
+
+                }
+            }
+            else{
+                throw new InvalidMoveException();
+            }
+        }
+        else{
+            throw new InvalidMoveException();
+        }
     }
 
     /**
@@ -84,6 +112,7 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
 
+    // check if king would be in check based on moves. true means would be in check, false means would not be in check
     public boolean isInCheck(TeamColor teamColor) {
         return isInCheck(teamColor, this.gameBoard);
     }
