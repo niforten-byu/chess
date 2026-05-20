@@ -59,4 +59,27 @@ public class GameServiceTest {
 
         Assertions.assertEquals("Error: bad request", exception.getMessage());
     }
+
+    @Test
+    public void listGamesSuccess() throws DataAccessException {
+        // make authenticationToken and put game in database
+        AuthData auth = authDAO.createAuthentication("duncan");
+        gameDAO.createGame("Gojo vs Geto chess match");
+
+        // get games
+        var games = gameService.listGames(auth.authToken());
+
+        // make sure there is only one game
+        Assertions.assertEquals(1, games.size());
+    }
+
+    @Test
+    public void listGamesUnauthorized() {
+        // try to get games with non-existent token
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            gameService.listGames("non-existent-token");
+        });
+
+        Assertions.assertEquals("Error: unauthorized", exception.getMessage());
+    }
 }

@@ -6,14 +6,12 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.DataAccessException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import model.*;
 import service.ClearService;
 import service.GameService;
 import com.google.gson.Gson;
-import model.AuthData;
-import model.UserData;
-import model.CreateGameRequest;
-import model.LoginRequest;
 import service.UserService;
+import java.util.Collection;
 import java.util.Map;
 
 public class Server {
@@ -41,6 +39,7 @@ public class Server {
         javalin.post("/session", this::loginHandler);
         javalin.delete("/session", this::logoutHandler);
         javalin.post("/game", this::createGameHandler);
+        javalin.get("/game", this::listGamesHandler);
 
         javalin.start(desiredPort);
         return javalin.port();
@@ -149,6 +148,29 @@ public class Server {
             }
             context.result(new Gson().toJson(Map.of("message", e.getMessage())));
         }
+    }
+
+    private void listGamesHandler(Context context) {
+        try {
+            // get token from header
+            String authenticationToken = context.header("authorization");
+
+            // get collection of games from database
+            Collection<GameData> games = gameService.listGames(authenticationToken);
+
+            // translate list to JSON
+            context.status(200);
+            context.result(new Gson().toJson(Map.of("games", games)));
+        }
+        catch (DataAccessException e) {
+            if (e.getMessage().equals("Error: unauthorized")) {
+                context.status(401);
+            } else {
+                context.status(500);
+            }
+            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        }
+
     }
 
     public void stop() {
