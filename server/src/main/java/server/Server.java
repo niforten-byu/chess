@@ -6,11 +6,13 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.DataAccessException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import model.LoginRequest;
 import service.ClearService;
+import service.GameService;
 import com.google.gson.Gson;
 import model.AuthData;
 import model.UserData;
+import model.CreateGameRequest;
+import model.LoginRequest;
 import service.UserService;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class Server {
     private final MemoryGameDAO gameDAO = new MemoryGameDAO();
     private final ClearService clearService = new ClearService(userDAO, authDAO, gameDAO);
     private final UserService userService = new UserService(userDAO, authDAO);
+    private final GameService gameService = new GameService(gameDAO, authDAO);
 
     private Javalin javalin;
 
@@ -37,6 +40,7 @@ public class Server {
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
         javalin.delete("/session", this::logoutHandler);
+        javalin.post("/game", this::createGameHandler);
 
         javalin.start(desiredPort);
         return javalin.port();
@@ -113,6 +117,33 @@ public class Server {
         catch (DataAccessException e) {
             if (e.getMessage().equals("Error: unauthorized")) {
                 context.status(401);
+            } else {
+                context.status(500);
+            }
+            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        }
+    }
+
+    private void createGameHandler (Context context) {
+        try {
+            // get token from header
+            String authenticationToken = context.header("authorization");
+
+            // convert JSON in CreateGameRecord
+            CreateGameRequest request = new Gson().fromJson(context.body(), CreateGameRequest.class);
+
+            // get new game id from service
+            int gameID = gameService.createGame(authenticationToken, request.gameName());
+
+            // return success
+            context.status(200);
+            context.result(new Gson().toJson(Map.of("gameID", gameID)));
+        }
+        catch (DataAccessException e) {
+            if (e.getMessage().equals("Error: unauthorized")) {
+                context.status(401);
+            } else if (e.getMessage().equals("Error: bad request")) {
+                context.status(400);
             } else {
                 context.status(500);
             }
