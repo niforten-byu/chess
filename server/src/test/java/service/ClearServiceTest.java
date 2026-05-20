@@ -27,9 +27,9 @@ public class ClearServiceTest {
     @Test
     public void clearSuccess() throws DataAccessException {
         // add test data to the databases
-        userDAO.createUser(new UserData("duncan", "password123", "duncan@byu.edu"));
+        userDAO.createUser(new UserData("duncan", "drowssap", "duncan@byu.edu"));
         authDAO.createAuthentication("duncan");
-        gameDAO.createGame("Friday Night Chess");
+        gameDAO.createGame("Friday Night Magic: Chess edition");
 
         // verify databases obtained the data before clear
         Assertions.assertNotNull(userDAO.getUser("duncan"));

@@ -4,6 +4,7 @@ import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
+import model.JoinGameRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,4 +83,57 @@ public class GameServiceTest {
 
         Assertions.assertEquals("Error: unauthorized", exception.getMessage());
     }
+
+    @Test
+    public void joinGameSuccess() throws DataAccessException {
+        // create a user and game
+        AuthData authentication = authDAO.createAuthentication("duncan");
+        int gameID = gameService.createGame(authentication.authToken(), "Sukuna vs Mahoraga in the sky");
+
+        // attempt to join as white
+        JoinGameRequest request = new JoinGameRequest("WHITE", gameID);
+        gameService.joinGame(authentication.authToken(), request);
+
+        // verify user is white
+        Assertions.assertEquals("duncan", gameDAO.getGame(gameID).whiteUsername());
+        Assertions.assertNull(gameDAO.getGame(gameID).blackUsername()); // black should be empty
+    }
+
+    @Test
+    public void joinGameUnauthorized() throws DataAccessException {
+        // create a user and game
+        AuthData auth = authDAO.createAuthentication("duncan");
+        int gameID = gameService.createGame(auth.authToken(), "Mahito vs Yuji Itadori: The last time we'll curse each other");
+
+        // attempt join with wron token
+        JoinGameRequest request = new JoinGameRequest("BLACK", gameID);
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            gameService.joinGame("non-existent-token", request);
+        });
+
+        // verify it didn't work
+        Assertions.assertEquals("Error: unauthorized", exception.getMessage());
+    }
+
+    @Test
+    public void joinGameSeatAlreadyTaken() throws DataAccessException {
+        // create two users and game
+        AuthData authentication1 = authDAO.createAuthentication("Megumi");
+        AuthData authentication2 = authDAO.createAuthentication("Toji");
+        int gameID = gameService.createGame(authentication1.authToken(), "Rabbit Escape");
+
+        // user 1 joins game as white
+        JoinGameRequest request1 = new JoinGameRequest("WHITE", gameID);
+        gameService.joinGame(authentication1.authToken(), request1);
+
+        // user 2 joins game, but also tries as white (naughty Toji)
+        JoinGameRequest request2 = new JoinGameRequest("WHITE", gameID);
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            gameService.joinGame(authentication2.authToken(), request2);
+        });
+
+        // make sure user 2 was not able to join as white
+        Assertions.assertEquals("Error: already taken", exception.getMessage());
+    }
+
 }

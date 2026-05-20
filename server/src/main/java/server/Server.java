@@ -24,6 +24,7 @@ public class Server {
     private final UserService userService = new UserService(userDAO, authDAO);
     private final GameService gameService = new GameService(gameDAO, authDAO);
 
+
     private Javalin javalin;
 
     public Server() {
@@ -40,6 +41,7 @@ public class Server {
         javalin.delete("/session", this::logoutHandler);
         javalin.post("/game", this::createGameHandler);
         javalin.get("/game", this::listGamesHandler);
+        javalin.put("/game", this::joinGameHandler);
 
         javalin.start(desiredPort);
         return javalin.port();
@@ -171,6 +173,32 @@ public class Server {
             context.result(new Gson().toJson(Map.of("message", e.getMessage())));
         }
 
+    }
+
+    private void joinGameHandler (Context context) {
+        try {
+            // get token from header and requested game
+            String authenticationToken = context.header("authorization");
+            JoinGameRequest request = new Gson().fromJson(context.body(), JoinGameRequest.class);
+
+            // attempt to join game
+            gameService.joinGame(authenticationToken, request);
+
+            context.status(200);
+            context.result("{}");
+        }
+        catch(DataAccessException e) {
+            if (e.getMessage().equals("Error: unauthorized")) {
+                context.status(401);
+            } else if (e.getMessage().equals("Error: bad request")) {
+                context.status(400);
+            } else if (e.getMessage().equals("Error: already taken")) {
+                context.status(403);
+            } else {
+                context.status(500);
+            }
+            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        }
     }
 
     public void stop() {

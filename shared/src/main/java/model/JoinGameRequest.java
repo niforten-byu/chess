@@ -1,4 +1,4 @@
 package model;
 
-public class JoinGameRequest {
+public record JoinGameRequest(String playerColor, int gameID) {
 }
