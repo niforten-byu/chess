@@ -1,4 +1,4 @@
-package services;
+package service;
 
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
@@ -10,7 +10,6 @@ public class ClearService {
     private final AuthDAO authDAO;
     private final GameDAO gameDAO;
 
-    // Notice we use the Interface names here!
     public ClearService(UserDAO userDAO, AuthDAO authDAO, GameDAO gameDAO) {
         this.userDAO = userDAO;
         this.authDAO = authDAO;
