@@ -4,6 +4,7 @@ import dataaccess.AuthDAO;
 import dataaccess.UserDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
+import model.LoginRequest;
 import model.UserData;
 
 public class UserService {
@@ -30,6 +31,24 @@ public class UserService {
         userDAO.createUser(user);
 
         // generate and return a new session token
+        return authDAO.createAuthentication(user.username());
+    }
+
+    public AuthData login(LoginRequest request) throws DataAccessException {
+        // validate login request
+        if (request.username() == null || request.password() == null) {
+            throw new DataAccessException("Error: bad request");
+        }
+
+        // get user from database using username
+        UserData user = userDAO.getUser(request.username());
+
+        // check if user exists and password matches user
+        if (user == null || !user.password().equals(request.password())) {
+            throw new DataAccessException("Error: unauthorized");
+        }
+
+        // generate new authentication token for user and return it
         return authDAO.createAuthentication(user.username());
     }
 }

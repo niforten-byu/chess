@@ -5,6 +5,7 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
 import model.UserData;
+import model.LoginRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,5 +50,35 @@ public class UserServiceTest {
         });
 
         Assertions.assertEquals("Error: already taken", exception.getMessage());
+    }
+
+    @Test public void loginSuccess() throws DataAccessException {
+        // register a new user in database
+        userService.register(new UserData("duncan", "password123", "duncan@byu.edu"));
+
+        // attempt login in with credentials that were registered
+        LoginRequest request = new LoginRequest("duncan", "password123");
+        AuthData auth = userService.login(request);
+
+        // verify valid authentication returned
+        Assertions.assertNotNull(auth);
+        Assertions.assertNotNull(auth.authToken());
+        Assertions.assertEquals("duncan", auth.username());
+    }
+
+    @Test
+    public void loginFailBadPassword() throws DataAccessException {
+        // register a new user in database
+        userService.register(new UserData("duncan", "password123", "duncan@byu.edu"));
+
+        // attempt login with different credentials (bad passowrd)
+        LoginRequest badRequest = new LoginRequest("duncan", "BAD_PASSWORD");
+
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            userService.login(badRequest);
+        });
+
+        // verify service caught bad password
+        Assertions.assertEquals("Error: unauthorized", exception.getMessage());
     }
 }
