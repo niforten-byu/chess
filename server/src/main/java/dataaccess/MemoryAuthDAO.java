@@ -4,11 +4,11 @@ import model.AuthData;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class MemoryAuthDAO {
+public class MemoryAuthDAO implements AuthDAO {
     // database table for active sessions
     private final HashMap<String, AuthData> authentications = new HashMap<>();
 
-    public AuthData createAuthentication(String username) {
+    public AuthData createAuthentication(String username) throws DataAccessException {
         // generate a random secure token string
         String newAuthenticationToken = UUID.randomUUID().toString();
         AuthData authentication = new AuthData(newAuthenticationToken, username);
@@ -17,15 +17,15 @@ public class MemoryAuthDAO {
         return authentication;
     }
 
-    public AuthData getAuthentication(String authToken) {
+    public AuthData getAuthentication(String authToken) throws DataAccessException {
         return authentications.get(authToken);
     }
 
-    public void deleteAuthentication(String authToken) {
+    public void deleteAuthentication(String authToken) throws DataAccessException {
         authentications.remove(authToken);
     }
 
-    public void clear() {
+    public void clear() throws DataAccessException {
         authentications.clear();
     }
 }
