@@ -51,4 +51,13 @@ public class UserService {
         // generate new authentication token for user and return it
         return authDAO.createAuthentication(user.username());
     }
+
+    public void logout(String authenticationToken) throws DataAccessException {
+        // verify authenticationToken exists in database
+        if (authDAO.getAuthentication(authenticationToken) == null) {
+            throw new DataAccessException("Error: unauthorized");
+        }
+
+        authDAO.deleteAuthentication(authenticationToken);
+    }
 }

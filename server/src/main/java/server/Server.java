@@ -36,6 +36,7 @@ public class Server {
         javalin.delete("/db", this::clearHandler);
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
+        javalin.delete("/session", this::logoutHandler);
 
         javalin.start(desiredPort);
         return javalin.port();
@@ -93,6 +94,25 @@ public class Server {
                 context.status(401);
             } else if (e.getMessage().equals("Error: bad request")) {
                 context.status(400);
+            } else {
+                context.status(500);
+            }
+            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        }
+    }
+
+    private void logoutHandler(Context context) {
+        try {// get token from HTTP header
+            String authenticationToken = context.header("authorization");
+            userService.logout(authenticationToken);
+
+            // return empty JSON
+            context.status(200);
+            context.result("{}");
+        }
+        catch (DataAccessException e) {
+            if (e.getMessage().equals("Error: unauthorized")) {
+                context.status(401);
             } else {
                 context.status(500);
             }

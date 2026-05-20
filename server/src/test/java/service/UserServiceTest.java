@@ -52,6 +52,32 @@ public class UserServiceTest {
         Assertions.assertEquals("Error: already taken", exception.getMessage());
     }
 
+    @Test
+    public void logoutSuccess() throws DataAccessException{
+        // register a new user
+        UserData user = new UserData("duncan", "password123", "duncan@byu.edu");
+        AuthData auth = userService.register(user);
+
+        // logout
+        userService.logout(auth.authToken());
+
+        // prove that the first logout worked by attempting a second logout
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            userService.logout(auth.authToken());
+        });
+        Assertions.assertEquals("Error: unauthorized", exception.getMessage());
+    }
+
+    @Test
+    public void logoutFailBadToken() {
+        // attempt logout with a token that doesn't exist
+        DataAccessException exception = Assertions.assertThrows(DataAccessException.class, () -> {
+            userService.logout("FakeToken");
+        });
+
+        Assertions.assertEquals("Error: unauthorized", exception.getMessage());
+    }
+
     @Test public void loginSuccess() throws DataAccessException {
         // register a new user in database
         userService.register(new UserData("duncan", "password123", "duncan@byu.edu"));
