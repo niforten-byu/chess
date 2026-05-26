@@ -34,7 +34,7 @@ public class Server {
     public int run(int desiredPort) {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
-        // register your endpoints
+        // register endpoints
         javalin.delete("/db", this::clearHandler);
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
