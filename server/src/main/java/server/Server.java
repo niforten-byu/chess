@@ -1,8 +1,6 @@
 package server;
 
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryGameDAO;
-import dataaccess.MemoryUserDAO;
+import dataaccess.*;
 import dataaccess.DataAccessException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -16,19 +14,31 @@ import java.util.Map;
 
 public class Server {
 
-    // instantiate the DAOs and Services for the whole server
-    private final MemoryUserDAO userDAO = new MemoryUserDAO();
-    private final MemoryAuthDAO authDAO = new MemoryAuthDAO();
-    private final MemoryGameDAO gameDAO = new MemoryGameDAO();
-    private final ClearService clearService = new ClearService(userDAO, authDAO, gameDAO);
-    private final UserService userService = new UserService(userDAO, authDAO);
-    private final GameService gameService = new GameService(gameDAO, authDAO);
-
+    // declare interfaces
+    private final UserDAO userDAO;
+    private final AuthDAO authDAO;
+    private final GameDAO gameDAO;
+    private final ClearService clearService;
+    private final UserService userService;
+    private final GameService gameService;
 
     private Javalin javalin;
 
     public Server() {
-        // need to implement
+        try {
+            // initialize sql daos
+            userDAO = new MySqlUserDAO();
+            authDAO = new MySqlAuthDAO();
+            gameDAO = new MySqlGameDAO();
+
+            // connect sql daos to services
+            clearService = new ClearService(userDAO, authDAO, gameDAO);
+            userService = new UserService(userDAO, authDAO);
+            gameService = new GameService(gameDAO, authDAO);
+        } catch (DataAccessException e) {
+            // database fails to start, server crashes
+            throw new RuntimeException("Unable to start server: database error", e);
+        }
     }
 
     public int run(int desiredPort) {
