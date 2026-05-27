@@ -150,14 +150,10 @@ public class ChessGame {
         for(int row = 1; row <= 8; row++) {
             for(int column = 1; column <= 8; column++) {
                 ChessPiece potentialKing = currentBoard.getPiece(new ChessPosition(row, column));
-                if(potentialKing != null) {
-                    ChessPiece.PieceType potentialType = potentialKing.getPieceType();
-                    if (potentialType == ChessPiece.PieceType.KING) {
-                        TeamColor potentialColor = potentialKing.getTeamColor();
-                        if (potentialColor == kingColor) {
-                            return new ChessPosition(row, column);
-                        }
-                    }
+                if(potentialKing != null
+                        && potentialKing.getPieceType() == ChessPiece.PieceType.KING
+                        && potentialKing.getTeamColor() == kingColor) {
+                    return new ChessPosition(row, column);
                 }
 
             }
