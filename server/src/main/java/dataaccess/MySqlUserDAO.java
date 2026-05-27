@@ -35,7 +35,7 @@ public class MySqlUserDAO implements UserDAO {
             // update
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("Error: unable to create user", e);
+            throw new DataAccessException("Error: unable to create user: ", e);
         }
     }
 
@@ -65,7 +65,7 @@ public class MySqlUserDAO implements UserDAO {
             return null;
         }
         catch(SQLException e) {
-            throw new DataAccessException("Error: unable to read user, e");
+            throw new DataAccessException("Error: unable to read user: ", e);
         }
     }
 
@@ -77,7 +77,7 @@ public class MySqlUserDAO implements UserDAO {
              PreparedStatement ps = connect.prepareStatement(statement)) {
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("Error: unable to clear users", e);
+            throw new DataAccessException("Error: unable to clear users: ", e);
         }
     }
 
@@ -104,7 +104,7 @@ public class MySqlUserDAO implements UserDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error: unable to configure database", e);
+            throw new DataAccessException("Error: unable to configure database: ", e);
         }
     }
 }
