@@ -1,7 +1,8 @@
 package service;
 
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryUserDAO;
+// Make sure to import the MySQL versions!
+import dataaccess.MySqlAuthDAO;
+import dataaccess.MySqlUserDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
 import model.UserData;
@@ -12,15 +13,20 @@ import org.junit.jupiter.api.Test;
 
 public class UserServiceTest {
 
-    private MemoryUserDAO userDAO;
-    private MemoryAuthDAO authDAO;
+    private MySqlUserDAO userDAO;
+    private MySqlAuthDAO authDAO;
     private UserService userService;
 
     @BeforeEach
-    public void setup() {
-        // create empty DAOs for the test
-        userDAO = new MemoryUserDAO();
-        authDAO = new MemoryAuthDAO();
+    public void setup() throws DataAccessException {
+        // implement sql daos
+        userDAO = new MySqlUserDAO();
+        authDAO = new MySqlAuthDAO();
+
+        // clear database before test
+        userDAO.clear();
+        authDAO.clear();
+
         userService = new UserService(userDAO, authDAO);
     }
 

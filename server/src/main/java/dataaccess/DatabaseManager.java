@@ -72,4 +72,16 @@ public class DatabaseManager {
         var port = Integer.parseInt(props.getProperty("db.port"));
         connectionUrl = String.format("jdbc:mysql://%s:%d", host, port);
     }
+
+    public static void executeCreateStatements(String[] statements) throws DataAccessException {
+        try (Connection connect = DatabaseManager.getConnection()) {
+            for (String statement : statements) {
+                try (PreparedStatement ps = connect.prepareStatement(statement)) {
+                    ps.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Error: unable to execute SQL statements", e);
+        }
+    }
 }

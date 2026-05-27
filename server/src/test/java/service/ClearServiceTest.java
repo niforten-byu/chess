@@ -1,8 +1,8 @@
 package service;
 
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryGameDAO;
-import dataaccess.MemoryUserDAO;
+import dataaccess.MySqlAuthDAO;
+import dataaccess.MySqlGameDAO;
+import dataaccess.MySqlUserDAO;
 import dataaccess.DataAccessException;
 import model.UserData;
 import org.junit.jupiter.api.Assertions;
@@ -10,19 +10,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ClearServiceTest {
-    private MemoryUserDAO userDAO;
-    private MemoryAuthDAO authDAO;
-    private MemoryGameDAO gameDAO;
+    private MySqlUserDAO userDAO;
+    private MySqlAuthDAO authDAO;
+    private MySqlGameDAO gameDAO;
     private ClearService clearService;
 
     @BeforeEach
-    public void setup() {
-        // create empty DAOs for the test
-        userDAO = new MemoryUserDAO();
-        authDAO = new MemoryAuthDAO();
-        gameDAO = new MemoryGameDAO();
+    public void setup() throws DataAccessException {
+        userDAO = new MySqlUserDAO();
+        authDAO = new MySqlAuthDAO();
+        gameDAO = new MySqlGameDAO();
+
+        userDAO.clear();
+        authDAO.clear();
+        gameDAO.clear();
+
         clearService = new ClearService(userDAO, authDAO, gameDAO);
     }
+
+    // ... leave all your @Test methods exactly the same! ...
 
     @Test
     public void clearSuccess() throws DataAccessException {

@@ -119,30 +119,29 @@ public class ChessGame {
 
     // for simulations
     private boolean isInCheck(TeamColor teamColor, ChessBoard board) {
-
         ChessPosition kingPosition = getKingPosition(board, teamColor);
-
-        TeamColor opponentColor;
-
-        if (teamColor == TeamColor.WHITE) {
-            opponentColor = TeamColor.BLACK;
-        } else {
-            opponentColor = TeamColor.WHITE;
-        }
+        TeamColor opponentColor = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
         for(int row = 1; row <= 8; row++) {
             for(int column = 1; column <= 8; column++) {
-                ChessPiece potentialEnemy = board.getPiece(new ChessPosition(row, column));
-                if(potentialEnemy != null && potentialEnemy.getTeamColor() == opponentColor){
-                    Collection<ChessMove> moves = potentialEnemy.pieceMoves(board, new ChessPosition(row, column));
-                    for(ChessMove move : moves) {
-                        if (move.getEndPosition().equals(kingPosition)) {
-                            return true;
-                        }
-                    }
+                if (enemyCanAttackKing(new ChessPosition(row, column), board, opponentColor, kingPosition)) {
+                    return true;
                 }
             }
+        }
+        return false;
+    }
 
+    // helper method for has iInCheck to reduce nesting
+    private boolean enemyCanAttackKing(ChessPosition position, ChessBoard board, TeamColor opponentColor, ChessPosition kingPos) {
+        ChessPiece potentialEnemy = board.getPiece(position);
+        if(potentialEnemy != null && potentialEnemy.getTeamColor() == opponentColor){
+            Collection<ChessMove> moves = potentialEnemy.pieceMoves(board, position);
+            for(ChessMove move : moves) {
+                if (move.getEndPosition().equals(kingPos)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -214,18 +213,23 @@ public class ChessGame {
         return true;
     }
 
-    private boolean hasValidMoves(TeamColor teamColor){
+    private boolean hasValidMoves(TeamColor teamColor) {
         for(int row = 1; row <= 8; row++) {
             for(int column = 1; column <= 8; column++) {
-                ChessPosition currentPosition = new ChessPosition(row, column);
-                ChessPiece potentialPiece = gameBoard.getPiece(currentPosition);
-                if(potentialPiece != null && potentialPiece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMoves(currentPosition);
-                    if(moves != null && !moves.isEmpty()) {
-                        return true;
-                    }
+                if (pieceHasValidMoves(new ChessPosition(row, column), teamColor)) {
+                    return true;
                 }
             }
+        }
+        return false;
+    }
+
+    // helper method for has valid moves to reduce nesting
+    private boolean pieceHasValidMoves(ChessPosition position, TeamColor teamColor) {
+        ChessPiece potentialPiece = gameBoard.getPiece(position);
+        if(potentialPiece != null && potentialPiece.getTeamColor() == teamColor) {
+            Collection<ChessMove> moves = validMoves(position);
+            return moves != null && !moves.isEmpty();
         }
         return false;
     }

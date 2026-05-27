@@ -57,15 +57,14 @@ public class Server {
         return javalin.port();
     }
 
-    // handler method
+    // handler methods
     private void clearHandler(Context contxt) {
         try {
             clearService.clear();
             contxt.status(200);
             contxt.result("{}");
-        } catch (DataAccessException e) {
-            contxt.status(500);
-            contxt.result("{ \"message\": \"Error: " + e.getMessage() + "\" }");
+        } catch(DataAccessException e) {
+            handleException(e, contxt);
         }
     }
 
@@ -80,17 +79,9 @@ public class Server {
             context.status(200);
             context.result(new Gson().toJson(auth));
 
-        } catch (DataAccessException e) {
-            if (e.getMessage().equals("Error: bad request")) {
-                context.status(400);
-            } else if (e.getMessage().equals("Error: already taken")) {
-                context.status(403);
-            } else {
-                context.status(500);
-            }
-
-            // return error in JSON
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        }
+        catch(DataAccessException e) {
+            handleException(e, context);
         }
     }
 
@@ -104,15 +95,8 @@ public class Server {
             context.status(200);
             context.result(new Gson().toJson(authentication));
         }
-        catch (DataAccessException e) {
-            if (e.getMessage().equals("Error: unauthorized")) {
-                context.status(401);
-            } else if (e.getMessage().equals("Error: bad request")) {
-                context.status(400);
-            } else {
-                context.status(500);
-            }
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        catch(DataAccessException e) {
+            handleException(e, context);
         }
     }
 
@@ -125,13 +109,8 @@ public class Server {
             context.status(200);
             context.result("{}");
         }
-        catch (DataAccessException e) {
-            if (e.getMessage().equals("Error: unauthorized")) {
-                context.status(401);
-            } else {
-                context.status(500);
-            }
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        catch(DataAccessException e) {
+            handleException(e, context);
         }
     }
 
@@ -150,15 +129,8 @@ public class Server {
             context.status(200);
             context.result(new Gson().toJson(Map.of("gameID", gameID)));
         }
-        catch (DataAccessException e) {
-            if (e.getMessage().equals("Error: unauthorized")) {
-                context.status(401);
-            } else if (e.getMessage().equals("Error: bad request")) {
-                context.status(400);
-            } else {
-                context.status(500);
-            }
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        catch(DataAccessException e) {
+            handleException(e, context);
         }
     }
 
@@ -174,15 +146,9 @@ public class Server {
             context.status(200);
             context.result(new Gson().toJson(Map.of("games", games)));
         }
-        catch (DataAccessException e) {
-            if (e.getMessage().equals("Error: unauthorized")) {
-                context.status(401);
-            } else {
-                context.status(500);
-            }
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+        catch(DataAccessException e) {
+            handleException(e, context);
         }
-
     }
 
     private void joinGameHandler (Context context) {
@@ -198,17 +164,24 @@ public class Server {
             context.result("{}");
         }
         catch(DataAccessException e) {
-            if (e.getMessage().equals("Error: unauthorized")) {
-                context.status(401);
-            } else if (e.getMessage().equals("Error: bad request")) {
-                context.status(400);
-            } else if (e.getMessage().equals("Error: already taken")) {
-                context.status(403);
-            } else {
-                context.status(500);
-            }
-            context.result(new Gson().toJson(Map.of("message", e.getMessage())));
+            handleException(e, context);
         }
+    }
+
+    private void handleException(DataAccessException e, Context context) {
+        if (e.getMessage().equals("Error: unauthorized")) {
+            context.status(401);
+        }
+        else if (e.getMessage().equals("Error: bad request")) {
+            context.status(400);
+        }
+        else if (e.getMessage().equals("Error: already taken")) {
+            context.status(403);
+        }
+        else {
+            context.status(500);
+        }
+        context.result(new Gson().toJson(Map.of("message", e.getMessage())));
     }
 
     public void stop() {

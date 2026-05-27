@@ -1,7 +1,7 @@
 package service;
 
-import dataaccess.MemoryAuthDAO;
-import dataaccess.MemoryGameDAO;
+import dataaccess.MySqlAuthDAO;
+import dataaccess.MySqlGameDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
 import model.JoinGameRequest;
@@ -11,15 +11,18 @@ import org.junit.jupiter.api.Test;
 
 public class GameServiceTest {
 
-    private MemoryAuthDAO authDAO;
-    private MemoryGameDAO gameDAO;
+    private MySqlAuthDAO authDAO;
+    private MySqlGameDAO gameDAO;
     private GameService gameService;
 
     @BeforeEach
-    public void setup() {
-        // Spin up fresh databases and the service before each test
-        authDAO = new MemoryAuthDAO();
-        gameDAO = new MemoryGameDAO();
+    public void setup() throws DataAccessException {
+        authDAO = new MySqlAuthDAO();
+        gameDAO = new MySqlGameDAO();
+
+        authDAO.clear();
+        gameDAO.clear();
+
         gameService = new GameService(gameDAO, authDAO);
     }
 
