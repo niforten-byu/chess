@@ -96,10 +96,13 @@ public class MySqlUserDAO implements UserDAO {
     };
 
     private void configureDatabase() throws DataAccessException {
+        // make sure database exists
         DatabaseManager.createDatabase();
+
         try (Connection connect = DatabaseManager.getConnection()) {
             for (String statement : createStatements) {
                 try (PreparedStatement ps = connect.prepareStatement(statement)) {
+                    // create table if it doesn't exist
                     ps.executeUpdate();
                 }
             }
