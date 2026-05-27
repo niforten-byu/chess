@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
-public class UserDAOtest {
+public class UserDAOTest {
 
     private MySqlUserDAO userDao;
 
