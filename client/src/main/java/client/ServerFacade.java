@@ -1,6 +1,9 @@
 package client;
 
 import com.google.gson.Gson;
+import model.AuthData;
+import model.UserData;
+import model.LoginRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,8 +23,41 @@ public class ServerFacade {
     }
 
     /**
-     * function to make HTTP requests to the server
-     *
+     * Calls server to make a new user
+     * @param user   UserData record with username, password, and email
+     * @return AuthData containing a new authentication token for registered user
+     */
+    public AuthData register(UserData user) throws ResponseException {
+        var path = "/user";
+        // send POST request to "/user" using user as body and get AuthData obj back
+        return this.makeRequest("POST", path, user, AuthData.class, null);
+    }
+
+    /**
+     * Calls server to log in an existing user
+     * @param request LoginRequest record with username and password
+     * @return AuthData with new authentication token
+     */
+    public AuthData login(LoginRequest request) throws ResponseException {
+        var path = "/session";
+        // send POST to "/session" with request as body and get AuthData obj back
+        return this.makeRequest("POST", path, request, AuthData.class, null);
+    }
+
+    /**
+     * Calls server to log out user
+     * @param authenticationToken Authorization token of user to log out
+     */
+    public void logout(String authenticationToken) throws ResponseException {
+        var path = "/session";
+        // send DELETE to "/session" and provide correct authenticationToken to logout correct user
+        this.makeRequest("DELETE", path, null, null, authenticationToken);
+    }
+
+
+
+    /**
+     * Make HTTP requests to the server
      * @param method              The desired HTTP method, such as "GET", "POST", "PUT", or "DELETE"
      * @param path                The endpoint path, aka "/user"
      * @param request             The object that needs to be serialized into the request body (null if there is no body)
@@ -60,8 +96,12 @@ public class ServerFacade {
             if (response.statusCode() >= 400) {
                 // if there is an error, parse JSON error message from server
                 Map<String, String> errorResponse = new Gson().fromJson(new InputStreamReader(response.body()), Map.class);
-                String errorMessage = errorResponse != null ? errorResponse.get("message") : "Unknown server error";
-                throw new ResponseException(response.statusCode(), errorMessage);
+                String errorMessage;
+                if (errorResponse != null && errorResponse.containsKey("message")) {
+                    errorMessage = errorResponse.get("message");
+                } else {
+                    errorMessage = "Unknown server error";
+                }                throw new ResponseException(response.statusCode(), errorMessage);
             }
 
             // parse response body if return type was needed
