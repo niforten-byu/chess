@@ -79,7 +79,10 @@ public class ServerFacade {
         record CreateGameResponse(int gameID) {}
 
         CreateGameResponse response = this.makeRequest("POST", path, request, CreateGameResponse.class, authenticationToken);
-        return response.gameID();
+        if (response != null) {
+            return response.gameID();
+        }
+        throw new ResponseException(500, "Error: Server returned empty response");
     }
 
     /**
@@ -94,7 +97,10 @@ public class ServerFacade {
         record ListGamesResponse(GameData[] games) {}
 
         ListGamesResponse response = this.makeRequest("GET", path, null, ListGamesResponse.class, authenticationToken);
-        return response.games();
+        if (response != null) {
+            return response.games();
+        }
+        throw new ResponseException(500, "Error: Server returned empty response");
     }
 
     /**
