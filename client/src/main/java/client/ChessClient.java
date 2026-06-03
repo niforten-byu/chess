@@ -4,11 +4,15 @@ import java.util.Arrays;
 import model.AuthData;
 import model.UserData;
 import model.LoginRequest;
+import model.CreateGameRequest;
+import model.JoinGameRequest;
+import model.GameData;
 
 public class ChessClient {
     private final ServerFacade server;
     private UserState state = UserState.LOGGED_OUT;
     private AuthData currentAuthentication = null;
+    private GameData[] gamelist = new GameData[0];
 
     public ChessClient(int port) {
         server = new ServerFacade(port);
@@ -24,7 +28,7 @@ public class ChessClient {
             // turn user input into multiple tokens
             String[] inputTokens = input.toLowerCase().split(" ");
 
-            // get user's command (first token)
+            // get user's command (first token), default to help
             String cmd;
             if (inputTokens.length > 0) {
                 cmd = inputTokens[0];
@@ -45,12 +49,17 @@ public class ChessClient {
             }
             else {
                 return switch (cmd) {
+                    case "logout" -> logout();
+                    case "create" -> createGame(params);
+                    case "list" -> listGames();
+                    case "join" -> joinGame(params);
+                    case "observe" -> observeGame(params);
                     case "quit" -> "quit";
                     default -> help();
                 };
             }
         } catch (Exception e) {
-            return e.getMessage();
+            return e.getMessage() + "\n";
         }
     }
 
@@ -64,7 +73,7 @@ public class ChessClient {
             state = UserState.LOGGED_IN;
             return String.format("Successfully registered and logged in as %s.\n", currentAuthentication.username());
         }
-        throw new ResponseException(400, "Needed to register: <USERNAME> <PASSWORD> <EMAIL>\n");
+        throw new ResponseException(400, "Expected: <USERNAME> <PASSWORD> <EMAIL>\n");
     }
 
     /**
@@ -77,8 +86,34 @@ public class ChessClient {
             state = UserState.LOGGED_IN;
             return String.format("Successfully logged in as %s.\n", currentAuthentication.username());
         }
-        throw new ResponseException(400, "Needed for login: <USERNAME> <PASSWORD>\n");
+        throw new ResponseException(400, "Expected: <USERNAME> <PASSWORD>\n");
     }
+
+    /**
+     * log out existing user
+     */
+    public String logout() throws ResponseException {
+        server.logout(currentAuthentication.authToken());
+        currentAuthentication = null;
+        state = UserState.LOGGED_OUT;
+        return "Successfully logged out.\n";
+    }
+
+    /**
+     * create new game
+     */
+    public String createGame(String[] params) throws ResponseException {
+        if (params.length >= 1) {
+            // rejoin  parameters in case the game name has spaces
+            String gameName = String.join(" ", params);
+            server.createGame(new CreateGameRequest(gameName), currentAuthentication.authToken());
+            return String.format("Successfully created game: '%s'.\n", gameName);
+        }
+        throw new ResponseException(400, "Expected: <NAME>");
+    }
+
+
+
 
     /**
      * return help menu to user based on their current state
