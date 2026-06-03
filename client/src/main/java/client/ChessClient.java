@@ -12,7 +12,7 @@ public class ChessClient {
     private final ServerFacade server;
     private UserState state = UserState.LOGGED_OUT;
     private AuthData currentAuthentication = null;
-    private GameData[] gamelist = new GameData[0];
+    private GameData[] gameList = new GameData[0];
 
     public ChessClient(int port) {
         server = new ServerFacade(port);
@@ -26,18 +26,17 @@ public class ChessClient {
     public String inputHelper(String input) {
         try {
             // turn user input into multiple tokens
-            String[] inputTokens = input.toLowerCase().split(" ");
+            String[] inputTokens = input.split(" ");
 
             // get user's command (first token), default to help
             String cmd;
-            if (inputTokens.length > 0) {
-                cmd = inputTokens[0];
+            if (inputTokens.length > 0 && !inputTokens[0].isEmpty()) {
+                cmd = inputTokens[0].toLowerCase(); // turn command into lowercase for switch statement
             } else {
                 cmd = "help";
             }
             // get parameter(s) (everything after the first token)
             String[] params = Arrays.copyOfRange(inputTokens, 1, inputTokens.length);
-
             // call method based user's state
             if (state == UserState.LOGGED_OUT) {
                 return switch (cmd) {
@@ -112,8 +111,74 @@ public class ChessClient {
         throw new ResponseException(400, "Expected: <NAME>");
     }
 
+    /**
+     * list all games associated with user
+     */
+    public String listGames() throws ResponseException {
+        gameList = server.listGames(currentAuthentication.authToken());
+        if (gameList.length == 0) {
+            return "There are currently no active games.\n";
+        }
 
+        StringBuilder builder = new StringBuilder("Active Games:\n");
+        for (int i = 0; i < gameList.length; i++) {
+            GameData game = gameList[i];
+            // white username
+            String white;
+            if (game.whiteUsername() != null) {
+                white = game.whiteUsername();
+            } else {
+                white = "Empty";
+            }
 
+            // black username
+            String black;
+            if (game.blackUsername() != null) {
+                black = game.blackUsername();
+            } else {
+                black = "Empty";
+            }
+            builder.append(String.format("  %d. %s (White: %s, Black: %s)\n", i + 1, game.gameName(), white, black));
+        }
+        return builder.toString();
+    }
+
+    /**
+     * join the game as specified color, draw the board for them
+     */
+    public String joinGame(String[] params) throws ResponseException {
+        if (params.length == 2) {
+            int gameIndex = Integer.parseInt(params[0]) - 1;
+            String color = params[1].toUpperCase();
+
+            // validate user input against game list array
+            if (gameIndex >= 0 && gameIndex < gameList.length) {
+                int realGameID = gameList[gameIndex].gameID();
+                server.joinGame(new JoinGameRequest(color, realGameID), currentAuthentication.authToken());
+
+                // draw board
+                return String.format("Successfully joined game '%s' as %s.\n(draw board)\n", gameList[gameIndex].gameName(), color);
+            }
+            throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
+        }
+        throw new ResponseException(400, "Expected: <GAME_NUMBER> [WHITE or BLACK]");
+    }
+
+    /**
+     * join the game as an observer, draw the board from white perspective
+     */
+    public String observeGame(String[] params) throws ResponseException {
+        if (params.length == 1) {
+            int gameIndex = Integer.parseInt(params[0]) - 1;
+
+            if (gameIndex >= 0 && gameIndex < gameList.length) {
+                // draw board
+                return String.format("Observing game '%s'.\n(draw board)\n", gameList[gameIndex].gameName());
+            }
+            throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
+        }
+        throw new ResponseException(400, "Expected: <GAME_NUMBER>");
+    }
 
     /**
      * return help menu to user based on their current state
@@ -134,7 +199,7 @@ public class ChessClient {
                 Please separate the command and each piece of information by spaces
                 - create <NAME> - create a new game with said NAME
                 - list - list all games you have
-                - join <ID> [WHITE|BLACK] - join a game as selected color
+                - join <ID> [WHITE or BLACK] - join a game as selected color
                 - observe <ID> - watch a game in progress
                 - logout - logout of the server when done
                 - quit - quit out of the server
