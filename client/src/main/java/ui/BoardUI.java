@@ -52,7 +52,9 @@ public class BoardUI {
         // loop over board
         for (int row = startRow; row!= endRow + rowDirection; row += rowDirection) {
             // left border
-            output.append(EscapeSequences.SET_BG_COLOR_LIGHT_GREY).append(EscapeSequences.SET_TEXT_COLOR_BLACK).append(" ").append(row).append(" ");
+            output.append(EscapeSequences.SET_BG_COLOR_LIGHT_GREY)
+                    .append(EscapeSequences.SET_TEXT_COLOR_BLACK)
+                    .append(" ").append(row).append(" ");
 
             // draw squares and pieces
             for (int col = startCol; col != endCol + colDirection; col += colDirection) {
@@ -76,8 +78,11 @@ public class BoardUI {
             }
 
             // right border
-            output.append(EscapeSequences.SET_BG_COLOR_LIGHT_GREY).append(EscapeSequences.SET_TEXT_COLOR_BLACK).append(" ").append(row).append(" ").append(EscapeSequences.RESET_BG_COLOR).append("\n");
-        }
+            output.append(EscapeSequences.SET_BG_COLOR_LIGHT_GREY)
+                    .append(EscapeSequences.SET_TEXT_COLOR_BLACK)
+                    .append(" ").append(row).append(" ")
+                    .append(EscapeSequences.RESET_BG_COLOR)
+                    .append("\n");        }
 
         output.append(drawHeaders(headers));
         output.append(EscapeSequences.RESET_TEXT_COLOR);
@@ -98,23 +103,38 @@ public class BoardUI {
     }
 
     private static String getPieceString(ChessPiece piece) {
+        boolean isWhite = piece.getTeamColor() == ChessGame.TeamColor.WHITE;
+
         // set piece color to black or white
         String color;
-        if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
+        if (isWhite) {
             color = EscapeSequences.SET_TEXT_COLOR_WHITE;
         } else {
             color = EscapeSequences.SET_TEXT_COLOR_BLACK;
         }
 
-        String pieceChar = EscapeSequences.EMPTY;
-        switch (piece.getPieceType()) {
-            case KING -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_KING : EscapeSequences.BLACK_KING;
-            case QUEEN -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_QUEEN : EscapeSequences.BLACK_QUEEN;
-            case BISHOP -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_BISHOP : EscapeSequences.BLACK_BISHOP;
-            case KNIGHT -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_KNIGHT : EscapeSequences.BLACK_KNIGHT;
-            case ROOK -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_ROOK : EscapeSequences.BLACK_ROOK;
-            case PAWN -> pieceChar = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? EscapeSequences.WHITE_PAWN : EscapeSequences.BLACK_PAWN;
+        String pieceChar;
+
+        if (isWhite) {
+            pieceChar = switch (piece.getPieceType()) {
+                case KING -> EscapeSequences.WHITE_KING;
+                case QUEEN -> EscapeSequences.WHITE_QUEEN;
+                case BISHOP -> EscapeSequences.WHITE_BISHOP;
+                case KNIGHT -> EscapeSequences.WHITE_KNIGHT;
+                case ROOK -> EscapeSequences.WHITE_ROOK;
+                case PAWN -> EscapeSequences.WHITE_PAWN;
+            };
+        } else {
+            pieceChar = switch (piece.getPieceType()) {
+                case KING -> EscapeSequences.BLACK_KING;
+                case QUEEN -> EscapeSequences.BLACK_QUEEN;
+                case BISHOP -> EscapeSequences.BLACK_BISHOP;
+                case KNIGHT -> EscapeSequences.BLACK_KNIGHT;
+                case ROOK -> EscapeSequences.BLACK_ROOK;
+                case PAWN -> EscapeSequences.BLACK_PAWN;
+            };
         }
+
         return color + pieceChar;
     }
 }
