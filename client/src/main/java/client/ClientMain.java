@@ -4,7 +4,13 @@ import chess.*;
 
 public class ClientMain {
     public static void main(String[] args) {
-        var piece = new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN);
-        System.out.println("♕ 240 Chess Client: " + piece);
+        // default port is 8080, can be overridden by passing in a new port
+        int port = 8080;
+        if (args.length == 1) {
+            port = Integer.parseInt(args[0]);
+        }
+
+        // start the REPL loop
+        new Repl(port).run();
     }
 }

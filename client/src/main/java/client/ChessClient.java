@@ -54,20 +54,24 @@ public class ChessClient {
     public String help() {
         if (state == UserState.LOGGED_OUT) {
             return """
-                    - register <USERNAME> <PASSWORD> <EMAIL> - to create an account
-                    - login <USERNAME> <PASSWORD> - to play chess
-                    - quit - playing chess
-                    - help - with possible commands
+                    Please type in your command, followed by any information needed (items enclosed by <>)
+                    Please separate the command and each piece of information by spaces
+                    - register <USERNAME> <PASSWORD> <EMAIL> - register a chess account
+                    - login <USERNAME> <PASSWORD> - login to your account
+                    - quit - quit out of the server
+                    - help - display these instructions again
                     """;
         }
         return """
-                - create <NAME> - a game
-                - list - games
-                - join <ID> [WHITE|BLACK] - a game
-                - observe <ID> - a game
-                - logout - when you are done
-                - quit - playing chess
-                - help - with possible commands
+                Please type in your command, followed by any information needed (items enclosed by <>)
+                Please separate the command and each piece of information by spaces
+                - create <NAME> - create a new game with said NAME
+                - list - list all games you have
+                - join <ID> [WHITE|BLACK] - join a game as selected color
+                - observe <ID> - watch a game in progress
+                - logout - logout of the server when done
+                - quit - quit out of the server
+                - help - display these instructions again
                 """;
     }
 
