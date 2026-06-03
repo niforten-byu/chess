@@ -1,10 +1,14 @@
 package client;
 
 import java.util.Arrays;
+import model.AuthData;
+import model.UserData;
+import model.LoginRequest;
 
 public class ChessClient {
     private final ServerFacade server;
     private UserState state = UserState.LOGGED_OUT;
+    private AuthData currentAuthentication = null;
 
     public ChessClient(int port) {
         server = new ServerFacade(port);
@@ -13,7 +17,7 @@ public class ChessClient {
     /**
      * evaluate user's input and call correct method
      * @param input users input from terminal
-     * @return method...
+     * @return string result to print to the console
      */
     public String inputHelper(String input) {
         try {
@@ -33,6 +37,8 @@ public class ChessClient {
             // call method based user's state
             if (state == UserState.LOGGED_OUT) {
                 return switch (cmd) {
+                    case "register" -> register(params);
+                    case "login" -> login(params);
                     case "quit" -> "quit";
                     default -> help();
                 };
@@ -46,6 +52,32 @@ public class ChessClient {
         } catch (Exception e) {
             return e.getMessage();
         }
+    }
+
+    /**
+     * register a new user to database
+     */
+    public String register(String[] params) throws ResponseException {
+        if(params.length == 3) {
+            UserData user = new UserData(params[0], params[1], params[2]);
+            currentAuthentication = server.register(user);
+            state = UserState.LOGGED_IN;
+            return String.format("Successfully registered and logged in as %s.\n", currentAuthentication.username());
+        }
+        throw new ResponseException(400, "Needed to register: <USERNAME> <PASSWORD> <EMAIL>\n");
+    }
+
+    /**
+     * logs in existing user
+     */
+    public String login(String[] params) throws ResponseException {
+        if(params.length == 2) {
+            LoginRequest request = new LoginRequest(params[0], params[1]);
+            currentAuthentication = server.login(request);
+            state = UserState.LOGGED_IN;
+            return String.format("Successfully logged in as %s.\n", currentAuthentication.username());
+        }
+        throw new ResponseException(400, "Needed for login: <USERNAME> <PASSWORD>\n");
     }
 
     /**
