@@ -42,6 +42,7 @@ public class ChessClient {
                 return switch (cmd) {
                     case "register" -> register(params);
                     case "login" -> login(params);
+                    case "clear" -> clear(); // for developers only
                     case "quit" -> "quit";
                     default -> help();
                 };
@@ -86,6 +87,14 @@ public class ChessClient {
             return String.format("Successfully logged in as %s.\n", currentAuthentication.username());
         }
         throw new ResponseException(400, "Expected: <USERNAME> <PASSWORD>\n");
+    }
+
+    /**
+     * secret developer function to wipe the database for testing
+     */
+    public String clear() throws ResponseException {
+        server.clear();
+        return "Database completely wiped.\n";
     }
 
     /**
@@ -148,8 +157,20 @@ public class ChessClient {
      */
     public String joinGame(String[] params) throws ResponseException {
         if (params.length == 2) {
-            int gameIndex = Integer.parseInt(params[0]) - 1;
+            int gameIndex;
+
+            // parse the game id number
+            try {
+                gameIndex = Integer.parseInt(params[0]) - 1;
+            } catch (NumberFormatException e) {
+                throw new ResponseException(400, "Error: Expected a number for the game ID.");
+            }
+
+            // validate the color
             String color = params[1].toUpperCase();
+            if (!color.equals("WHITE") && !color.equals("BLACK")) {
+                throw new ResponseException(400, "Error: Team color must be WHITE or BLACK.");
+            }
 
             // validate user input against game list array
             if (gameIndex >= 0 && gameIndex < gameList.length) {
@@ -157,7 +178,12 @@ public class ChessClient {
                 server.joinGame(new JoinGameRequest(color, realGameID), currentAuthentication.authToken());
 
                 // draw board
-                return String.format("Successfully joined game '%s' as %s.\n(draw board)\n", gameList[gameIndex].gameName(), color);
+                chess.ChessBoard board = new chess.ChessBoard();
+                board.resetBoard();
+                boolean isWhite = color.equals("WHITE");
+
+                String boardString = ui.BoardUI.drawBoard(board, isWhite);
+                return String.format("Successfully joined game '%s' as %s.\n%s\n", gameList[gameIndex].gameName(), color, boardString);
             }
             throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
         }
@@ -169,11 +195,22 @@ public class ChessClient {
      */
     public String observeGame(String[] params) throws ResponseException {
         if (params.length == 1) {
-            int gameIndex = Integer.parseInt(params[0]) - 1;
+            int gameIndex;
+
+            // parse the game id number
+            try {
+                gameIndex = Integer.parseInt(params[0]) - 1;
+            } catch (NumberFormatException e) {
+                throw new ResponseException(400, "Error: Expected a number for the game ID.");
+            }
 
             if (gameIndex >= 0 && gameIndex < gameList.length) {
                 // draw board
-                return String.format("Observing game '%s'.\n(draw board)\n", gameList[gameIndex].gameName());
+                chess.ChessBoard board = new chess.ChessBoard();
+                board.resetBoard();
+                String boardString = ui.BoardUI.drawBoard(board, true);
+
+                return String.format("Observing game '%s'.\n%s\n", gameList[gameIndex].gameName(), boardString);
             }
             throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
         }
