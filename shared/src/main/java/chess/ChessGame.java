@@ -14,6 +14,7 @@ public class ChessGame {
 
     private ChessBoard gameBoard = new ChessBoard();
     private TeamColor currentTurnColor;
+    private boolean gameOver = false;
 
     public ChessGame() {
         gameBoard.resetBoard();
@@ -260,5 +261,19 @@ public class ChessGame {
      */
     public ChessBoard getBoard() {
         return gameBoard;
+    }
+
+    /**
+     * @return true if game is over (due to checkmate, stalemate, or resignation)
+     */
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    /**
+     * marks the game as over
+     */
+    public void setGameOver(boolean status) {
+        this.gameOver = status;
     }
 }
