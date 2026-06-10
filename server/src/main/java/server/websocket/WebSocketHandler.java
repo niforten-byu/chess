@@ -6,6 +6,7 @@ import dataaccess.GameDAO;
 import io.javalin.websocket.WsMessageContext;
 import model.AuthData;
 import model.GameData;
+import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
@@ -92,7 +93,66 @@ public class WebSocketHandler {
         }
     }
 
-    private void makeMove(WsMessageContext context, UserGameCommand command) {}
+    private void makeMove(WsMessageContext context, UserGameCommand command) {
+        try {
+            // parse JSON as a MakeMoveCommand to get ChessMove object
+            MakeMoveCommand moveCommand = new Gson().fromJson(context.message(), MakeMoveCommand.class);
+
+            // verify the authentication
+            AuthData authentication = authDAO.getAuthentication(command.getAuthToken());
+            if (authentication == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: unauthorized")));
+                return;
+            }
+
+            // verify the game exists
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            if (gameData == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: game not found")));
+                return;
+            }
+
+            // verify the user is a player and it is their piece
+            String username = authentication.username();
+            chess.ChessGame game = gameData.game();
+            chess.ChessPiece piece = game.getBoard().getPiece(moveCommand.getMove().getStartPosition());
+
+            if (piece == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: No piece at start position.")));
+                return;
+            }
+
+            // check if user is trying to move opponent's piece
+            chess.ChessGame.TeamColor pieceColor = piece.getTeamColor();
+            if (pieceColor == chess.ChessGame.TeamColor.WHITE && !username.equals(gameData.whiteUsername())) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: You cannot move white pieces.")));
+                return;
+            }
+            if (pieceColor == chess.ChessGame.TeamColor.BLACK && !username.equals(gameData.blackUsername())) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: You cannot move black pieces.")));
+                return;
+            }
+
+            // attempt to make the move
+            // throw an InvalidMoveException if move is illegal
+            game.makeMove(moveCommand.getMove());
+
+            // update database with new board state
+            gameDAO.updateGame(gameData);
+
+
+        } catch (chess.InvalidMoveException e) {
+            // catch invalid chess moves and tell client they made a mistake
+            try {
+                context.send(new Gson().toJson(new ErrorMessage("Error: Invalid move.")));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void leave(WsMessageContext context, UserGameCommand command) {}
     private void resign(WsMessageContext context, UserGameCommand command) {}
 }
