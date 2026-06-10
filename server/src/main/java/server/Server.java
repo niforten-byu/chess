@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import service.UserService;
 import java.util.Collection;
 import java.util.Map;
+import server.websocket.WebSocketHandler;
 
 public class Server {
 
@@ -24,12 +25,15 @@ public class Server {
 
     private Javalin javalin;
 
+    private final WebSocketHandler webSocketHandler;
+
     public Server() {
         try {
             // initialize sql daos
             userDAO = new MySqlUserDAO();
             authDAO = new MySqlAuthDAO();
             gameDAO = new MySqlGameDAO();
+            webSocketHandler = new WebSocketHandler();
 
             // connect sql daos to services
             clearService = new ClearService(userDAO, authDAO, gameDAO);
@@ -52,6 +56,10 @@ public class Server {
         javalin.post("/game", this::createGameHandler);
         javalin.get("/game", this::listGamesHandler);
         javalin.put("/game", this::joinGameHandler);
+
+        javalin.ws("/ws", ws -> {
+            ws.onMessage(webSocketHandler::onMessage);
+        });
 
         javalin.start(desiredPort);
         return javalin.port();
