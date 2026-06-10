@@ -1,20 +1,23 @@
 package client;
 
 import java.util.Arrays;
-import model.AuthData;
-import model.UserData;
-import model.LoginRequest;
-import model.CreateGameRequest;
-import model.JoinGameRequest;
-import model.GameData;
+import com.google.gson.Gson;
+import model.*;
+import websocket.WebSocketCommunicator;
+import websocket.ServerMessageObserver;
+import websocket.commands.UserGameCommand;
+import websocket.messages.ServerMessage;
 
-public class ChessClient {
+public class ChessClient implements ServerMessageObserver {
     private final ServerFacade server;
+    private final int serverPort;
+    private WebSocketCommunicator ws;
     private UserState state = UserState.LOGGED_OUT;
     private AuthData currentAuthentication = null;
     private GameData[] gameList = new GameData[0];
 
     public ChessClient(int port) {
+        this.serverPort = port;
         server = new ServerFacade(port);
     }
 
@@ -175,15 +178,25 @@ public class ChessClient {
             // validate user input against game list array
             if (gameIndex >= 0 && gameIndex < gameList.length) {
                 int realGameID = gameList[gameIndex].gameID();
+
+                // hit HTTP endpoint to claim the spot in the database
                 server.joinGame(new JoinGameRequest(color, realGameID), currentAuthentication.authToken());
 
-                // draw board
-                chess.ChessBoard board = new chess.ChessBoard();
-                board.resetBoard();
-                boolean isWhite = color.equals("WHITE");
+                // open the WebSocket connection
+                try {
+                    ws = new WebSocketCommunicator("http://localhost:" + serverPort, this);
 
-                String boardString = ui.BoardUI.drawBoard(board, isWhite);
-                return String.format("Successfully joined game '%s' as %s.\n%s\n", gameList[gameIndex].gameName(), color, boardString);
+                    // create connect command and send it as JSON
+                    UserGameCommand connectCmd = new UserGameCommand(UserGameCommand.CommandType.CONNECT, currentAuthentication.authToken(), realGameID);
+                    ws.send(new Gson().toJson(connectCmd));
+
+                    // change state so the REPL shows [GAMEPLAY] >>>
+                    state = UserState.GAMEPLAY;
+
+                    return String.format("Joined game '%s' as %s.\n", gameList[gameIndex].gameName(), color);
+                } catch (Exception e) {
+                    throw new ResponseException(500, "WebSocket Error: " + e.getMessage());
+                }
             }
             throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
         }
@@ -205,12 +218,20 @@ public class ChessClient {
             }
 
             if (gameIndex >= 0 && gameIndex < gameList.length) {
-                // draw board
-                chess.ChessBoard board = new chess.ChessBoard();
-                board.resetBoard();
-                String boardString = ui.BoardUI.drawBoard(board, true);
+                int realGameID = gameList[gameIndex].gameID();
 
-                return String.format("Observing game '%s'.\n%s\n", gameList[gameIndex].gameName(), boardString);
+                // open the WebSocket connection
+                try {
+                    ws = new WebSocketCommunicator("http://localhost:" + serverPort, this);
+
+                    UserGameCommand connectCmd = new UserGameCommand(UserGameCommand.CommandType.CONNECT, currentAuthentication.authToken(), realGameID);
+                    ws.send(new Gson().toJson(connectCmd));
+
+                    state = UserState.GAMEPLAY;
+                    return String.format("Observing game '%s'.\n", gameList[gameIndex].gameName());
+                } catch (Exception e) {
+                    throw new ResponseException(500, "WebSocket Error: " + e.getMessage());
+                }
             }
             throw new ResponseException(400, "Invalid game number. Type 'list' to see valid games.");
         }
@@ -246,5 +267,10 @@ public class ChessClient {
 
     public UserState getState() {
         return state;
+    }
+
+    @Override
+    public void notify(ServerMessage message) {
+        // To be implemented in Commit 11!
     }
 }
