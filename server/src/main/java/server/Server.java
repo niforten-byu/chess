@@ -33,7 +33,8 @@ public class Server {
             userDAO = new MySqlUserDAO();
             authDAO = new MySqlAuthDAO();
             gameDAO = new MySqlGameDAO();
-            webSocketHandler = new WebSocketHandler();
+            // pass DAOs into the handler so it can talk to database
+            webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
 
             // connect sql daos to services
             clearService = new ClearService(userDAO, authDAO, gameDAO);
