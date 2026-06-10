@@ -16,7 +16,7 @@ import java.util.logging.Level;
 
 
 /**
- * Network traffic controller for websocket messages. When client sends a message
+ * network traffic controller for websocket messages. when clients sends a message
  * over a websocket connection Javalin routes it to onMessage method
  */
 public class WebSocketHandler {
@@ -118,6 +118,15 @@ public class WebSocketHandler {
             // verify the user is a player and it is their piece
             String username = authentication.username();
             chess.ChessGame game = gameData.game();
+
+            // checks if somehow they are trying to make a move after the game has ended
+            if (game.isGameOver() || game.isInCheckmate(chess.ChessGame.TeamColor.WHITE) ||
+                    game.isInCheckmate(chess.ChessGame.TeamColor.BLACK) || game.isInStalemate(chess.ChessGame.TeamColor.WHITE) ||
+                    game.isInStalemate(chess.ChessGame.TeamColor.BLACK)) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: Cannot make a move. The game is already over.")));
+                return;
+            }
+
             chess.ChessPiece piece = game.getBoard().getPiece(moveCommand.getMove().getStartPosition());
 
             if (piece == null) {
@@ -157,12 +166,18 @@ public class WebSocketHandler {
                     chess.ChessGame.TeamColor.BLACK : chess.ChessGame.TeamColor.WHITE;
 
             if (game.isInCheckmate(opponentColor)) {
+                game.setGameOver(true);
+                gameDAO.updateGame(gameData);
+
                 String checkmateMsg = String.format("Checkmate! %s wins!", username);
                 connections.broadcast(command.getGameID(), "", new NotificationMessage(checkmateMsg));
             } else if (game.isInCheck(opponentColor)) {
                 String checkMsg = String.format("Check! %s is in check.", opponentColor.name());
                 connections.broadcast(command.getGameID(), "", new NotificationMessage(checkMsg));
             } else if (game.isInStalemate(opponentColor)) {
+                game.setGameOver(true);
+                gameDAO.updateGame(gameData);
+
                 String stalemateMsg = "Stalemate! The game is a tie.";
                 connections.broadcast(command.getGameID(), "", new NotificationMessage(stalemateMsg));
             }
@@ -180,6 +195,92 @@ public class WebSocketHandler {
         }
     }
 
-    private void leave(WsMessageContext context, UserGameCommand command) {}
-    private void resign(WsMessageContext context, UserGameCommand command) {}
+    private void leave(WsMessageContext context, UserGameCommand command) {
+        try {
+            // authenticate the leaving user
+            AuthData authentication = authDAO.getAuthentication(command.getAuthToken());
+            if (authentication == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: unauthorized")));
+                return;
+            }
+
+            // fetch current game state from database
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            if (gameData == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: game not found")));
+                return;
+            }
+
+            String username = authentication.username();
+
+            // remove the player from their color slot if they were playing
+            boolean wasPlayer = false;
+            if (username.equals(gameData.whiteUsername())) {
+                gameData = new GameData(gameData.gameID(), null, gameData.blackUsername(), gameData.gameName(), gameData.game());
+                wasPlayer = true;
+            } else if (username.equals(gameData.blackUsername())) {
+                gameData = new GameData(gameData.gameID(), gameData.whiteUsername(), null, gameData.gameName(), gameData.game());
+                wasPlayer = true;
+            }
+
+            // update database if any slot was cleared
+            if (wasPlayer) {
+                gameDAO.updateGame(gameData);
+            }
+
+            // broadcast leaving notification to all other connected users
+            String message = String.format("%s left the game.", username);
+            connections.broadcast(command.getGameID(), command.getAuthToken(), new NotificationMessage(message));
+
+            // remove their session tracking from ConnectionManager
+            connections.remove(command.getGameID(), command.getAuthToken());
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error processing LEAVE command: " + e.getMessage(), e);
+        }
+    }
+
+    private void resign(WsMessageContext context, UserGameCommand command) {
+        try {
+            // authenticate resigning user
+            AuthData authentication = authDAO.getAuthentication(command.getAuthToken());
+            if (authentication == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: unauthorized")));
+                return;
+            }
+
+            // fetch current game state
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            if (gameData == null) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: game not found")));
+                return;
+            }
+
+            String username = authentication.username();
+            chess.ChessGame game = gameData.game();
+
+            // verify user is a player, not an observer
+            if (!username.equals(gameData.whiteUsername()) && !username.equals(gameData.blackUsername())) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: Observers cannot resign.")));
+                return;
+            }
+
+            // verify the game isn't already finished
+            if (game.isGameOver()) {
+                context.send(new Gson().toJson(new ErrorMessage("Error: Cannot resign. The game is already over.")));
+                return;
+            }
+
+            // mark game as over and update the database
+            game.setGameOver(true);
+            gameDAO.updateGame(gameData);
+
+            // broadcast the notification to all clients
+            String message = String.format("%s has resigned. The game is over.", username);
+            connections.broadcast(command.getGameID(), "", new NotificationMessage(message));
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error processing RESIGN command: " + e.getMessage(), e);
+        }
+    }
 }
