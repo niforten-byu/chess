@@ -16,6 +16,7 @@ public class ChessClient implements ServerMessageObserver {
     private AuthData currentAuthentication = null;
     private GameData[] gameList = new GameData[0];
     private chess.ChessGame.TeamColor playerColor = chess.ChessGame.TeamColor.WHITE;
+    private int currentGameID;
 
     public ChessClient(int port) {
         this.serverPort = port;
@@ -42,16 +43,16 @@ public class ChessClient implements ServerMessageObserver {
             // get parameter(s) (everything after the first token)
             String[] params = Arrays.copyOfRange(inputTokens, 1, inputTokens.length);
             // call method based user's state
+            // call method based user's state
             if (state == UserState.LOGGED_OUT) {
                 return switch (cmd) {
                     case "register" -> register(params);
                     case "login" -> login(params);
-                    case "clear" -> clear(); // for developers only
+                    case "clear" -> clear();
                     case "quit" -> "quit";
                     default -> help();
                 };
-            }
-            else {
+            } else if (state == UserState.LOGGED_IN) {
                 return switch (cmd) {
                     case "logout" -> logout();
                     case "create" -> createGame(params);
@@ -59,6 +60,14 @@ public class ChessClient implements ServerMessageObserver {
                     case "join" -> joinGame(params);
                     case "observe" -> observeGame(params);
                     case "quit" -> "quit";
+                    default -> help();
+                };
+            } else { // UserState.GAMEPLAY
+                return switch (cmd) {
+                    case "move" -> makeMove(params);
+                    case "leave" -> leave();
+                    case "resign" -> resign();
+                    case "help" -> help();
                     default -> help();
                 };
             }
@@ -179,6 +188,7 @@ public class ChessClient implements ServerMessageObserver {
             // validate user input against game list array
             if (gameIndex >= 0 && gameIndex < gameList.length) {
                 int realGameID = gameList[gameIndex].gameID();
+                currentGameID = realGameID;
 
                 // hit HTTP endpoint to claim the spot in the database
                 server.joinGame(new JoinGameRequest(color, realGameID), currentAuthentication.authToken());
@@ -227,6 +237,7 @@ public class ChessClient implements ServerMessageObserver {
 
             if (gameIndex >= 0 && gameIndex < gameList.length) {
                 int realGameID = gameList[gameIndex].gameID();
+                currentGameID = realGameID;
 
                 playerColor = chess.ChessGame.TeamColor.WHITE;
 
@@ -254,25 +265,29 @@ public class ChessClient implements ServerMessageObserver {
     public String help() {
         if (state == UserState.LOGGED_OUT) {
             return """
-                    Please type in your command, followed by any information needed (items enclosed by <>)
-                    Please separate the command and each piece of information by spaces
                     - register <USERNAME> <PASSWORD> <EMAIL> - register a chess account
                     - login <USERNAME> <PASSWORD> - login to your account
                     - quit - quit out of the server
                     - help - display these instructions again
                     """;
+        } else if (state == UserState.LOGGED_IN) {
+            return """
+                    - create <NAME> - create a new game with said NAME
+                    - list - list all games you have
+                    - join <ID> [WHITE or BLACK] - join a game as selected color
+                    - observe <ID> - watch a game in progress
+                    - logout - logout of the server when done
+                    - quit - quit out of the server
+                    - help - display these instructions again
+                    """;
+        } else { // GAMEPLAY
+            return """
+                    - move <START> <END> [PROMOTION] - move a piece (example: 'move e2 e4' or 'move a7 a8 queen' for promoting a pawn)
+                    - leave - leave the game
+                    - resign - forfeit the game
+                    - help - display these instructions again
+                    """;
         }
-        return """
-                Please type in your command, followed by any information needed (items enclosed by <>)
-                Please separate the command and each piece of information by spaces
-                - create <NAME> - create a new game with said NAME
-                - list - list all games you have
-                - join <ID> [WHITE or BLACK] - join a game as selected color
-                - observe <ID> - watch a game in progress
-                - logout - logout of the server when done
-                - quit - quit out of the server
-                - help - display these instructions again
-                """;
     }
 
     public UserState getState() {
@@ -299,6 +314,86 @@ public class ChessClient implements ServerMessageObserver {
                 websocket.messages.ErrorMessage error = (websocket.messages.ErrorMessage) message;
                 System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_RED + error.getErrorMessage() + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
                 printCurrentPrompt();
+            }
+        }
+    }
+
+    /**
+     * send a MAKE_MOVE command to the server
+     */
+    public String makeMove(String[] params) throws ResponseException {
+        if (params.length >= 2) {
+            try {
+                String startParam = params[0].toLowerCase();
+                String endParam = params[1].toLowerCase();
+
+                // convert standard chess notation (ex: "e2") to column (1-8) and row (1-8)
+                int startCol = startParam.charAt(0) - 'a' + 1;
+                int startRow = startParam.charAt(1) - '0';
+                int endCol = endParam.charAt(0) - 'a' + 1;
+                int endRow = endParam.charAt(1) - '0';
+
+                chess.ChessPosition start = new chess.ChessPosition(startRow, startCol);
+                chess.ChessPosition end = new chess.ChessPosition(endRow, endCol);
+
+                // handle pawn promotion
+                chess.ChessPiece.PieceType promotionPiece = null;
+                if (params.length == 3) {
+                    promotionPiece = chess.ChessPiece.PieceType.valueOf(params[2].toUpperCase());
+                }
+
+                chess.ChessMove move = new chess.ChessMove(start, end, promotionPiece);
+
+                websocket.commands.MakeMoveCommand cmd = new websocket.commands.MakeMoveCommand(currentAuthentication.authToken(), currentGameID, move);
+                ws.send(new Gson().toJson(cmd));
+
+                return "";
+            } catch (Exception e) {
+                throw new ResponseException(400, "Invalid move format. Use <START> <END> (e.g., e2 e4).");
+            }
+        }
+        throw new ResponseException(400, "Expected: <START> <END> [PROMOTION_PIECE]");
+    }
+
+    /**
+     * send LEAVE command and return to LOGGED_IN state
+     */
+    public String leave() throws ResponseException {
+        try {
+            UserGameCommand cmd = new UserGameCommand(UserGameCommand.CommandType.LEAVE, currentAuthentication.authToken(), currentGameID);
+            ws.send(new Gson().toJson(cmd));
+            state = UserState.LOGGED_IN;
+            return "You have left the game.\n";
+        } catch (Exception e) {
+            throw new ResponseException(500, "Failed to leave game.");
+        }
+    }
+
+
+    /**
+     * confirm and send RESIGN command
+     */
+    public String resign() throws ResponseException {
+        java.util.Scanner scanner = new java.util.Scanner(System.in);
+
+        // loop until valid 'yes' or 'no' response
+        while (true) {
+            System.out.print("Are you sure you want to resign? (yes/no): ");
+            String response = scanner.nextLine().trim().toLowerCase();
+
+            if (response.equals("yes") || response.equals("y")) {
+                try {
+                    UserGameCommand cmd = new UserGameCommand(UserGameCommand.CommandType.RESIGN, currentAuthentication.authToken(), currentGameID);
+                    ws.send(new Gson().toJson(cmd));
+                    return ""; // server will broadcast the notification
+                } catch (Exception e) {
+                    throw new ResponseException(500, "Failed to resign game.");
+                }
+            } else if (response.equals("no") || response.equals("n")) {
+                return "Resignation cancelled.\n";
+            } else {
+                // if they don't send in yes or no, ask them to
+                System.out.println("Invalid input. Please enter 'yes' or 'no'.");
             }
         }
     }
