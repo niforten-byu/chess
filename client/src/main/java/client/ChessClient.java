@@ -15,6 +15,7 @@ public class ChessClient implements ServerMessageObserver {
     private UserState state = UserState.LOGGED_OUT;
     private AuthData currentAuthentication = null;
     private GameData[] gameList = new GameData[0];
+    private chess.ChessGame.TeamColor playerColor = chess.ChessGame.TeamColor.WHITE;
 
     public ChessClient(int port) {
         this.serverPort = port;
@@ -182,6 +183,13 @@ public class ChessClient implements ServerMessageObserver {
                 // hit HTTP endpoint to claim the spot in the database
                 server.joinGame(new JoinGameRequest(color, realGameID), currentAuthentication.authToken());
 
+                // Determine the player's color
+                if (color.equals("WHITE")) {
+                    playerColor = chess.ChessGame.TeamColor.WHITE;
+                } else {
+                    playerColor = chess.ChessGame.TeamColor.BLACK;
+                }
+
                 // open the WebSocket connection
                 try {
                     ws = new WebSocketCommunicator("http://localhost:" + serverPort, this);
@@ -219,6 +227,8 @@ public class ChessClient implements ServerMessageObserver {
 
             if (gameIndex >= 0 && gameIndex < gameList.length) {
                 int realGameID = gameList[gameIndex].gameID();
+
+                playerColor = chess.ChessGame.TeamColor.WHITE;
 
                 // open the WebSocket connection
                 try {
@@ -271,6 +281,30 @@ public class ChessClient implements ServerMessageObserver {
 
     @Override
     public void notify(ServerMessage message) {
-        // To be implemented in Commit 11!
+        switch (message.getServerMessageType()) {
+            case LOAD_GAME -> {
+                websocket.messages.LoadGameMessage loadMessage = (websocket.messages.LoadGameMessage) message;
+                boolean isWhite = (playerColor == chess.ChessGame.TeamColor.WHITE);
+
+                // print the board
+                System.out.print("\n\n" + ui.BoardUI.drawBoard(loadMessage.getGame().game().getBoard(), isWhite));
+                printCurrentPrompt();
+            }
+            case NOTIFICATION -> {
+                websocket.messages.NotificationMessage notification = (websocket.messages.NotificationMessage) message;
+                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_GREEN + notification.getMessage() + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
+                printCurrentPrompt();
+            }
+            case ERROR -> {
+                websocket.messages.ErrorMessage error = (websocket.messages.ErrorMessage) message;
+                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_RED + error.getErrorMessage() + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
+                printCurrentPrompt();
+            }
+        }
+    }
+
+    // helper method to reprint the REPL prompt asynchronously
+    private void printCurrentPrompt() {
+        System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_GREEN + "[" + state + "] >>> " + ui.EscapeSequences.RESET_TEXT_COLOR);
     }
 }

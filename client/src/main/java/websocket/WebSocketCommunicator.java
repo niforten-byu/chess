@@ -27,10 +27,12 @@ public class WebSocketCommunicator extends Endpoint {
             this.session.addMessageHandler(new MessageHandler.Whole<String>() {
                 @Override
                 public void onMessage(String message) {
-                    // deserialize JSON string into a ServerMessage object
-                    ServerMessage serverMessage = new Gson().fromJson(message, ServerMessage.class);
-                    // pass it to the observer to handle
-                    observer.notify(serverMessage);
+                    ServerMessage baseMessage = new Gson().fromJson(message, ServerMessage.class);
+                    switch (baseMessage.getServerMessageType()) {
+                        case LOAD_GAME -> observer.notify(new Gson().fromJson(message, websocket.messages.LoadGameMessage.class));
+                        case NOTIFICATION -> observer.notify(new Gson().fromJson(message, websocket.messages.NotificationMessage.class));
+                        case ERROR -> observer.notify(new Gson().fromJson(message, websocket.messages.ErrorMessage.class));
+                    }
                 }
             });
         } catch (DeploymentException | IOException | URISyntaxException ex) {
