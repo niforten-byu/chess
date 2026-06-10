@@ -143,6 +143,30 @@ public class WebSocketHandler {
             // update database with new board state
             gameDAO.updateGame(gameData);
 
+            // send updated game state all users
+            LoadGameMessage loadMessage = new LoadGameMessage(gameData);
+            connections.broadcast(command.getGameID(), "", loadMessage);
+
+            // send notification that move was made to all users but the one that made the move
+            String moveNotice = String.format("%s made a move.", username);
+            NotificationMessage moveNotification = new NotificationMessage(moveNotice);
+            connections.broadcast(command.getGameID(), command.getAuthToken(), moveNotification);
+
+            // check for check, checkmate, or stalemate and notify all users
+            chess.ChessGame.TeamColor opponentColor = (pieceColor == chess.ChessGame.TeamColor.WHITE) ?
+                    chess.ChessGame.TeamColor.BLACK : chess.ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(opponentColor)) {
+                String checkmateMsg = String.format("Checkmate! %s wins!", username);
+                connections.broadcast(command.getGameID(), "", new NotificationMessage(checkmateMsg));
+            } else if (game.isInCheck(opponentColor)) {
+                String checkMsg = String.format("Check! %s is in check.", opponentColor.name());
+                connections.broadcast(command.getGameID(), "", new NotificationMessage(checkMsg));
+            } else if (game.isInStalemate(opponentColor)) {
+                String stalemateMsg = "Stalemate! The game is a tie.";
+                connections.broadcast(command.getGameID(), "", new NotificationMessage(stalemateMsg));
+            }
+
 
         } catch (chess.InvalidMoveException e) {
             // catch invalid chess moves and tell client they made a mistake
