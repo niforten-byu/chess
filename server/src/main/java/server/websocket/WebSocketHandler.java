@@ -11,6 +11,8 @@ import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 
 /**
@@ -22,6 +24,7 @@ public class WebSocketHandler {
     public final ConnectionManager connections = new ConnectionManager();
     private final AuthDAO authDAO;
     private final GameDAO gameDAO;
+    private static final Logger logger = Logger.getLogger(WebSocketHandler.class.getName());
 
     public WebSocketHandler(AuthDAO authDAO, GameDAO gameDAO) {
         this.authDAO = authDAO;
@@ -42,7 +45,7 @@ public class WebSocketHandler {
             }
         } catch (Exception e) {
             // catch broken JSON messages
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
@@ -89,7 +92,7 @@ public class WebSocketHandler {
             connections.broadcast(command.getGameID(), command.getAuthToken(), notification);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
@@ -146,10 +149,10 @@ public class WebSocketHandler {
             try {
                 context.send(new Gson().toJson(new ErrorMessage("Error: Invalid move.")));
             } catch (Exception ex) {
-                ex.printStackTrace();
+                logger.log(Level.SEVERE, "Error in WebSocket Handler: " + ex.getMessage(), e);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
