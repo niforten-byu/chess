@@ -70,6 +70,9 @@ public class WebSocketHandler {
             // add user to ConnectionManager
             connections.add(command.getGameID(), command.getAuthToken(), context.session);
 
+            // extend server timeout to one hour
+            context.session.setIdleTimeout(java.time.Duration.ofHours(1));
+
             // send LOAD_GAME back to user who just connected
             LoadGameMessage loadMessage = new LoadGameMessage(game);
             context.send(new Gson().toJson(loadMessage));

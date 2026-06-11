@@ -23,6 +23,9 @@ public class WebSocketCommunicator extends Endpoint {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             this.session = container.connectToServer(this, socketURI);
 
+            // increase timeout to one hour for more testing and playtime
+            this.session.setMaxIdleTimeout(3600000);
+
             // set up listener for incoming messages from server
             this.session.addMessageHandler(new MessageHandler.Whole<String>() {
                 @Override
