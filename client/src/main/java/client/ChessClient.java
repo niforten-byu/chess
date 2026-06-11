@@ -364,7 +364,6 @@ public class ChessClient implements ServerMessageObserver {
                 return "";
             }
             catch (Exception e) {
-                e.printStackTrace();
                 throw new ResponseException(400, "Invalid move format. Please use move <START> <END> (example move e2 e4).");
             }
         }
@@ -382,11 +381,9 @@ public class ChessClient implements ServerMessageObserver {
             return "You have left the game.\n";
         }
         catch (Exception e) {
-            e.printStackTrace();
             throw new ResponseException(500, "Failed to leave game.");
         }
     }
-
 
     /**
      * confirm and send RESIGN command
@@ -405,7 +402,6 @@ public class ChessClient implements ServerMessageObserver {
                     ws.send(new Gson().toJson(cmd));
                     return ""; // server will broadcast the notification
                 } catch (Exception e) {
-                    e.printStackTrace();
                     throw new ResponseException(500, "Failed to resign game.");
                 }
             } else if (response.equals("no") || response.equals("n")) {
