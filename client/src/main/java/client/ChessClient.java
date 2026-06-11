@@ -212,7 +212,11 @@ public class ChessClient implements ServerMessageObserver {
                     ws = new WebSocketCommunicator("http://localhost:" + serverPort, this);
 
                     // create connect command and send it as JSON
-                    UserGameCommand connectCmd = new UserGameCommand(UserGameCommand.CommandType.CONNECT, currentAuthentication.authToken(), realGameID);
+                    UserGameCommand connectCmd = new UserGameCommand(
+                            UserGameCommand.CommandType.CONNECT,
+                            currentAuthentication.authToken(),
+                            realGameID
+                    );
                     ws.send(new Gson().toJson(connectCmd));
 
                     // change state so the REPL shows [GAMEPLAY] >>>
@@ -253,7 +257,11 @@ public class ChessClient implements ServerMessageObserver {
                 try {
                     ws = new WebSocketCommunicator("http://localhost:" + serverPort, this);
 
-                    UserGameCommand connectCmd = new UserGameCommand(UserGameCommand.CommandType.CONNECT, currentAuthentication.authToken(), realGameID);
+                    UserGameCommand connectCmd = new UserGameCommand(
+                            UserGameCommand.CommandType.CONNECT,
+                            currentAuthentication.authToken(),
+                            realGameID
+                    );
                     ws.send(new Gson().toJson(connectCmd));
 
                     state = UserState.GAMEPLAY;
@@ -358,7 +366,11 @@ public class ChessClient implements ServerMessageObserver {
 
                 chess.ChessMove move = new chess.ChessMove(start, end, promotionPiece);
 
-                websocket.commands.MakeMoveCommand cmd = new websocket.commands.MakeMoveCommand(currentAuthentication.authToken(), currentGameID, move);
+                websocket.commands.MakeMoveCommand cmd = new websocket.commands.MakeMoveCommand(
+                        currentAuthentication.authToken(),
+                        currentGameID,
+                        move
+                );
                 ws.send(new com.google.gson.Gson().toJson(cmd));
 
                 return "";
@@ -375,7 +387,11 @@ public class ChessClient implements ServerMessageObserver {
      */
     public String leave() throws ResponseException {
         try {
-            UserGameCommand cmd = new UserGameCommand(UserGameCommand.CommandType.LEAVE, currentAuthentication.authToken(), currentGameID);
+            UserGameCommand cmd = new UserGameCommand(
+                    UserGameCommand.CommandType.LEAVE,
+                    currentAuthentication.authToken(),
+                    currentGameID
+            );
             ws.send(new Gson().toJson(cmd));
             state = UserState.LOGGED_IN;
             return "You have left the game.\n";
@@ -398,7 +414,11 @@ public class ChessClient implements ServerMessageObserver {
 
             if (response.equals("yes") || response.equals("y")) {
                 try {
-                    UserGameCommand cmd = new UserGameCommand(UserGameCommand.CommandType.RESIGN, currentAuthentication.authToken(), currentGameID);
+                    UserGameCommand cmd = new UserGameCommand(
+                            UserGameCommand.CommandType.RESIGN,
+                            currentAuthentication.authToken(),
+                            currentGameID
+                    );
                     ws.send(new Gson().toJson(cmd));
                     return ""; // server will broadcast the notification
                 } catch (Exception e) {
@@ -414,7 +434,9 @@ public class ChessClient implements ServerMessageObserver {
     }
 
     public String redraw() {
-        if (currentGame == null) return "No game to redraw.\n";
+        if (currentGame == null) {
+            return "No game to redraw.\n";
+        }
         boolean isWhite = (playerColor == chess.ChessGame.TeamColor.WHITE);
         return "\n\n" + ui.BoardUI.drawBoard(currentGame.getBoard(), isWhite) + "\n";
     }
@@ -423,7 +445,9 @@ public class ChessClient implements ServerMessageObserver {
         if (params.length != 1) {
             throw new ResponseException(400, "Expected: <POSITION> (example: e2)");
         }
-        if (currentGame == null) return "No game data available.\n";
+        if (currentGame == null) {
+            return "No game data available.\n";
+        }
 
         try {
             String posParam = params[0].toLowerCase();

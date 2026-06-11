@@ -14,7 +14,6 @@ import websocket.messages.NotificationMessage;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-
 /**
  * network traffic controller for websocket messages. when clients sends a message
  * over a websocket connection Javalin routes it to onMessage method
@@ -24,7 +23,7 @@ public class WebSocketHandler {
     public final ConnectionManager connections = new ConnectionManager();
     private final AuthDAO authDAO;
     private final GameDAO gameDAO;
-    private static final Logger logger = Logger.getLogger(WebSocketHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(WebSocketHandler.class.getName());
 
     public WebSocketHandler(AuthDAO authDAO, GameDAO gameDAO) {
         this.authDAO = authDAO;
@@ -45,7 +44,7 @@ public class WebSocketHandler {
             }
         } catch (Exception e) {
             // catch broken JSON messages
-            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
@@ -95,7 +94,7 @@ public class WebSocketHandler {
             connections.broadcast(command.getGameID(), command.getAuthToken(), notification);
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
@@ -191,10 +190,10 @@ public class WebSocketHandler {
             try {
                 context.send(new Gson().toJson(new ErrorMessage("Error: Invalid move.")));
             } catch (Exception ex) {
-                logger.log(Level.SEVERE, "Error in WebSocket Handler: " + ex.getMessage(), e);
+                LOGGER.log(Level.SEVERE, "Error in WebSocket Handler: " + ex.getMessage(), e);
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error in WebSocket Handler: " + e.getMessage(), e);
         }
     }
 
@@ -239,7 +238,7 @@ public class WebSocketHandler {
             connections.remove(command.getGameID(), command.getAuthToken());
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error processing LEAVE command: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error processing LEAVE command: " + e.getMessage(), e);
         }
     }
 
@@ -283,7 +282,7 @@ public class WebSocketHandler {
             connections.broadcast(command.getGameID(), "", new NotificationMessage(message));
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error processing RESIGN command: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error processing RESIGN command: " + e.getMessage(), e);
         }
     }
 }
