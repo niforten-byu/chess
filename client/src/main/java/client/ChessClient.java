@@ -329,12 +329,16 @@ public class ChessClient implements ServerMessageObserver {
             }
             case NOTIFICATION -> {
                 websocket.messages.NotificationMessage notification = (websocket.messages.NotificationMessage) message;
-                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_GREEN + notification.getMessage() + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
+                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_GREEN
+                        + notification.getMessage()
+                        + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
                 printCurrentPrompt();
             }
             case ERROR -> {
                 websocket.messages.ErrorMessage error = (websocket.messages.ErrorMessage) message;
-                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_RED + error.getErrorMessage() + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
+                System.out.print("\n" + ui.EscapeSequences.SET_TEXT_COLOR_RED
+                        + error.getErrorMessage()
+                        + ui.EscapeSequences.RESET_TEXT_COLOR + "\n");
                 printCurrentPrompt();
             }
         }
