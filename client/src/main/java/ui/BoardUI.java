@@ -9,10 +9,19 @@ public class BoardUI {
 
     /**
      * draw a string representation of chessboard
-     * @param board current board state
-     * @param isWhitePerspective True for drawing from White's perspective
      */
     public static String drawBoard(ChessBoard board, boolean isWhitePerspective) {
+        // Just call the new method with a null collection for the highlights
+        return drawBoard(board, isWhitePerspective, null);
+    }
+
+    /**
+     * draw a string representation of chessboard with piece highlights
+     * @param board current board state
+     * @param isWhitePerspective true for drawing from white's perspective
+     * @param highlights collection of squares/positions to highlightSquares
+     */
+    public static String drawBoard(ChessBoard board, boolean isWhitePerspective, java.util.Collection<ChessPosition> highlights) {
         StringBuilder output = new StringBuilder();
 
         // define horizontal axis labels based on white or black
@@ -50,7 +59,7 @@ public class BoardUI {
         }
 
         // loop over board
-        for (int row = startRow; row!= endRow + rowDirection; row += rowDirection) {
+        for (int row = startRow; row != endRow + rowDirection; row += rowDirection) {
             // left border
             output.append(EscapeSequences.SET_BG_COLOR_LIGHT_GREY)
                     .append(EscapeSequences.SET_TEXT_COLOR_BLACK)
@@ -58,10 +67,16 @@ public class BoardUI {
 
             // draw squares and pieces
             for (int col = startCol; col != endCol + colDirection; col += colDirection) {
-                // h1 (row 1, col 8) is light. a1 (row 1, col 1) is dark.
                 boolean isLightSquare = (row + col) % 2 != 0;
+
+                // check if square is highlighted
+                ChessPosition currentPos = new ChessPosition(row, col);
+                boolean isHighlighted = (highlights != null && highlights.contains(currentPos));
+
                 String bgColor;
-                if (isLightSquare) {
+                if (isHighlighted) {
+                    bgColor = isLightSquare ? EscapeSequences.SET_BG_COLOR_GREEN : EscapeSequences.SET_BG_COLOR_DARK_GREEN;
+                } else if (isLightSquare) {
                     bgColor = EscapeSequences.SET_BG_COLOR_LIGHT_BROWN;
                 } else {
                     bgColor = EscapeSequences.SET_BG_COLOR_DARK_BROWN;
@@ -69,7 +84,7 @@ public class BoardUI {
 
                 output.append(bgColor);
 
-                ChessPiece piece = board.getPiece(new ChessPosition(row, col));
+                ChessPiece piece = board.getPiece(currentPos);
                 if (piece == null) {
                     output.append(EscapeSequences.EMPTY);
                 } else {
@@ -82,7 +97,8 @@ public class BoardUI {
                     .append(EscapeSequences.SET_TEXT_COLOR_BLACK)
                     .append(" ").append(row).append(" ")
                     .append(EscapeSequences.RESET_BG_COLOR)
-                    .append("\n");        }
+                    .append("\n");
+        }
 
         output.append(drawHeaders(headers));
         output.append(EscapeSequences.RESET_TEXT_COLOR);

@@ -17,6 +17,7 @@ public class ChessClient implements ServerMessageObserver {
     private GameData[] gameList = new GameData[0];
     private chess.ChessGame.TeamColor playerColor = chess.ChessGame.TeamColor.WHITE;
     private int currentGameID;
+    private chess.ChessGame currentGame;
 
     public ChessClient(int port) {
         this.serverPort = port;
@@ -64,6 +65,8 @@ public class ChessClient implements ServerMessageObserver {
                 };
             } else { // UserState.GAMEPLAY
                 return switch (cmd) {
+                    case "redraw" -> redraw();
+                    case "highlight" -> highlightSquares(params);
                     case "move" -> makeMove(params);
                     case "leave" -> leave();
                     case "resign" -> resign();
@@ -128,6 +131,9 @@ public class ChessClient implements ServerMessageObserver {
             // rejoin  parameters in case the game name has spaces
             String gameName = String.join(" ", params);
             server.createGame(new CreateGameRequest(gameName), currentAuthentication.authToken());
+
+            listGames();
+
             return String.format("Successfully created game: '%s'.\n", gameName);
         }
         throw new ResponseException(400, "Expected: <NAME>");
@@ -282,7 +288,9 @@ public class ChessClient implements ServerMessageObserver {
                     """;
         } else { // GAMEPLAY
             return """
-                    - move <START> <END> [PROMOTION] - move a piece (example: 'move e2 e4' or 'move a7 a8 queen' for promoting a pawn)
+                    redraw - redraw the chess board
+                    - highlight <POSITION> - highlight legal moves for a piece (example: 'highlight e2')
+                    - move <START> <END> [PROMOTION] - move a piece (example 'move e2 e4' or 'move a7 a8 queen' if promoting)
                     - leave - leave the game
                     - resign - forfeit the game
                     - help - display these instructions again
@@ -299,6 +307,10 @@ public class ChessClient implements ServerMessageObserver {
         switch (message.getServerMessageType()) {
             case LOAD_GAME -> {
                 websocket.messages.LoadGameMessage loadMessage = (websocket.messages.LoadGameMessage) message;
+
+                // save the game state locally so it can redrawn
+                this.currentGame = loadMessage.getGame().game();
+
                 boolean isWhite = (playerColor == chess.ChessGame.TeamColor.WHITE);
 
                 // print the board
@@ -345,11 +357,12 @@ public class ChessClient implements ServerMessageObserver {
                 chess.ChessMove move = new chess.ChessMove(start, end, promotionPiece);
 
                 websocket.commands.MakeMoveCommand cmd = new websocket.commands.MakeMoveCommand(currentAuthentication.authToken(), currentGameID, move);
-                ws.send(new Gson().toJson(cmd));
+                ws.send(new com.google.gson.Gson().toJson(cmd));
 
                 return "";
-            } catch (Exception e) {
-                throw new ResponseException(400, "Invalid move format. Use <START> <END> (e.g., e2 e4).");
+            }
+            catch (Exception e) {
+                throw new ResponseException(400, "Invalid move format. Please use move <START> <END> (example move e2 e4).");
             }
         }
         throw new ResponseException(400, "Expected: <START> <END> [PROMOTION_PIECE]");
@@ -364,7 +377,8 @@ public class ChessClient implements ServerMessageObserver {
             ws.send(new Gson().toJson(cmd));
             state = UserState.LOGGED_IN;
             return "You have left the game.\n";
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new ResponseException(500, "Failed to leave game.");
         }
     }
@@ -395,6 +409,42 @@ public class ChessClient implements ServerMessageObserver {
                 // if they don't send in yes or no, ask them to
                 System.out.println("Invalid input. Please enter 'yes' or 'no'.");
             }
+        }
+    }
+
+    public String redraw() {
+        if (currentGame == null) return "No game to redraw.\n";
+        boolean isWhite = (playerColor == chess.ChessGame.TeamColor.WHITE);
+        return "\n\n" + ui.BoardUI.drawBoard(currentGame.getBoard(), isWhite) + "\n";
+    }
+
+    public String highlightSquares(String[] params) throws ResponseException {
+        if (params.length != 1) {
+            throw new ResponseException(400, "Expected: <POSITION> (example: e2)");
+        }
+        if (currentGame == null) return "No game data available.\n";
+
+        try {
+            String posParam = params[0].toLowerCase();
+            int col = posParam.charAt(0) - 'a' + 1;
+            int row = posParam.charAt(1) - '0';
+            chess.ChessPosition startPos = new chess.ChessPosition(row, col);
+
+            // calculate valid moves using ChessGame logic
+            var validMoves = currentGame.validMoves(startPos);
+            java.util.HashSet<chess.ChessPosition> highlights = new java.util.HashSet<>();
+            highlights.add(startPos); // highlight the piece
+
+            if (validMoves != null) {
+                for (chess.ChessMove move : validMoves) {
+                    highlights.add(move.getEndPosition()); // highlight all valid destinations
+                }
+            }
+
+            boolean isWhite = (playerColor == chess.ChessGame.TeamColor.WHITE);
+            return "\n\n" + ui.BoardUI.drawBoard(currentGame.getBoard(), isWhite, highlights) + "\n";
+        } catch (Exception e) {
+            throw new ResponseException(400, "Invalid position format. Use <COL><ROW> (ex. e2).");
         }
     }
 
