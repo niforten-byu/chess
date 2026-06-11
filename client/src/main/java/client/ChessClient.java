@@ -175,6 +175,7 @@ public class ChessClient implements ServerMessageObserver {
      * join the game as specified color, draw the board for them
      */
     public String joinGame(String[] params) throws ResponseException {
+        listGames();
         if (params.length == 2) {
             int gameIndex;
 
@@ -231,6 +232,7 @@ public class ChessClient implements ServerMessageObserver {
      * join the game as an observer, draw the board from white perspective
      */
     public String observeGame(String[] params) throws ResponseException {
+        listGames();
         if (params.length == 1) {
             int gameIndex;
 
@@ -288,7 +290,7 @@ public class ChessClient implements ServerMessageObserver {
                     """;
         } else { // GAMEPLAY
             return """
-                    redraw - redraw the chess board
+                    - redraw - redraw the chess board
                     - highlight <POSITION> - highlight legal moves for a piece (example: 'highlight e2')
                     - move <START> <END> [PROMOTION] - move a piece (example 'move e2 e4' or 'move a7 a8 queen' if promoting)
                     - leave - leave the game
@@ -362,6 +364,7 @@ public class ChessClient implements ServerMessageObserver {
                 return "";
             }
             catch (Exception e) {
+                e.printStackTrace();
                 throw new ResponseException(400, "Invalid move format. Please use move <START> <END> (example move e2 e4).");
             }
         }
@@ -379,6 +382,7 @@ public class ChessClient implements ServerMessageObserver {
             return "You have left the game.\n";
         }
         catch (Exception e) {
+            e.printStackTrace();
             throw new ResponseException(500, "Failed to leave game.");
         }
     }
@@ -401,6 +405,7 @@ public class ChessClient implements ServerMessageObserver {
                     ws.send(new Gson().toJson(cmd));
                     return ""; // server will broadcast the notification
                 } catch (Exception e) {
+                    e.printStackTrace();
                     throw new ResponseException(500, "Failed to resign game.");
                 }
             } else if (response.equals("no") || response.equals("n")) {

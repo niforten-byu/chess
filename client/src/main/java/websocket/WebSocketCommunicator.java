@@ -44,6 +44,11 @@ public class WebSocketCommunicator extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
     }
 
+    @Override
+    public void onClose(Session session, CloseReason closeReason) {
+        System.out.println("\n[WebSocket Closed by Server] Reason: " + closeReason.getReasonPhrase());
+    }
+
     /**
      * send a JSON string to the server
      */
